@@ -1,0 +1,64 @@
+:root {
+  color-scheme: light;
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: #f7f7fb;
+  color: #1b1b1f;
+}
+
+main {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+input,
+textarea,
+button {
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+button {
+  cursor: pointer;
+}
+
+section {
+  margin-bottom: 24px;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  padding: 20px;
+}
+
+.report h1,
+.report h2,
+.report h3 {
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.report p {
+  line-height: 1.6;
+  margin: 0 0 1rem 0;
+}
+
+.history-item {
+  border-bottom: 1px solid #e7e7ee;
+  padding: 12px 0;
+}
+
+.history-item:last-child {
+  border-bottom: none;
+}

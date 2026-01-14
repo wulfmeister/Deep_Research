@@ -1,0 +1,224 @@
+import { createChatCompletion } from "../venice/client";
+import { Message } from "../venice/types";
+import { leadResearcherPrompt, reportGenerationWithDraftInsightPrompt } from "../prompts";
+import { DEFAULT_MODEL } from "./config";
+import { formatPrompt, getTodayStr } from "./utils";
+import { parseToolCalls, ResearcherResult, SupervisorState } from "./types";
+import { runResearcher } from "./researcher";
+
+export interface SupervisorConfig {
+  maxIterations: number;
+  maxConcurrentResearchers: number;
+  model?: string;
+}
+
+const supervisorTools = [
+  {
+    type: "function" as const,
+    function: {
+      name: "ConductResearch",
+      description: "Delegate research to a sub-agent",
+      parameters: {
+        type: "object",
+        properties: {
+          research_topic: { type: "string" }
+        },
+        required: ["research_topic"],
+        additionalProperties: false
+      }
+    }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "ResearchComplete",
+      description: "Signal that research is complete",
+      parameters: {
+        type: "object",
+        properties: {},
+        required: [],
+        additionalProperties: false
+      }
+    }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "think_tool",
+      description: "Reflect on research progress",
+      parameters: {
+        type: "object",
+        properties: { reflection: { type: "string" } },
+        required: ["reflection"],
+        additionalProperties: false
+      }
+    }
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "refine_draft_report",
+      description: "Refine draft report using findings",
+      parameters: {
+        type: "object",
+        properties: {
+          research_brief: { type: "string" },
+          findings: { type: "string" },
+          draft_report: { type: "string" }
+        },
+        required: ["research_brief", "findings", "draft_report"],
+        additionalProperties: false
+      }
+    }
+  }
+];
+
+export async function runSupervisor(
+  state: SupervisorState,
+  config: SupervisorConfig
+) {
+  const model = config.model ?? DEFAULT_MODEL;
+
+  let supervisorMessages = state.supervisorMessages;
+  let researchIterations = state.researchIterations;
+  let notes = state.notes;
+  let rawNotes = state.rawNotes;
+  let draftReport = state.draftReport ?? "";
+
+  while (researchIterations < config.maxIterations) {
+    const systemPrompt = formatPrompt(leadResearcherPrompt, {
+      date: getTodayStr(),
+      max_concurrent_research_units: String(config.maxConcurrentResearchers),
+      max_researcher_iterations: String(config.maxIterations)
+    });
+
+    const response = await createChatCompletion({
+      model,
+      messages: [{ role: "system", content: systemPrompt }, ...supervisorMessages],
+      tools: supervisorTools,
+      temperature: 0.3,
+      parallel_tool_calls: true,
+      venice_parameters: {
+        include_venice_system_prompt: false,
+        strip_thinking_response: true
+      }
+    });
+
+    const assistantMessage = response.choices[0]?.message;
+    const toolCalls = parseToolCalls(assistantMessage?.tool_calls);
+    if (!assistantMessage || toolCalls.length === 0) {
+      break;
+    }
+
+    if (toolCalls.some((call) => call.name === "ResearchComplete")) {
+      break;
+    }
+
+    const toolMessages: Message[] = [];
+
+    const conductCalls = toolCalls.filter(
+      (call) => call.name === "ConductResearch"
+    );
+    if (conductCalls.length > 0) {
+      const researchResults = await Promise.all(
+        conductCalls.map(async (call) => {
+          const researchTopic = String(call.arguments.research_topic ?? "");
+          if (!researchTopic) {
+            return {
+              call,
+              result: {
+                compressedResearch: "Missing research topic",
+                rawNotes: []
+              } as ResearcherResult
+            };
+          }
+
+          const result = await runResearcher(researchTopic, model);
+          return { call, result };
+        })
+      );
+
+      for (const { call, result } of researchResults) {
+        notes = [...notes, result.compressedResearch];
+        rawNotes = [...rawNotes, ...result.rawNotes];
+        toolMessages.push({
+          role: "tool",
+          name: call.name,
+          tool_call_id: call.id,
+          content: result.compressedResearch
+        });
+      }
+    }
+
+    for (const call of toolCalls) {
+      if (call.name === "think_tool") {
+        toolMessages.push({
+          role: "tool",
+          name: call.name,
+          tool_call_id: call.id,
+          content: "Reflection recorded."
+        });
+      }
+
+      if (call.name === "refine_draft_report") {
+        const findings = notes.join("\n");
+        const refined = await refineDraftReport({
+          model,
+          researchBrief: state.researchBrief,
+          findings,
+          draftReport
+        });
+        draftReport = refined;
+
+        toolMessages.push({
+          role: "tool",
+          name: call.name,
+          tool_call_id: call.id,
+          content: refined
+        });
+      }
+    }
+
+    supervisorMessages = [...supervisorMessages, assistantMessage, ...toolMessages];
+    researchIterations += 1;
+  }
+
+  return {
+    supervisorMessages,
+    researchIterations,
+    notes,
+    rawNotes,
+    draftReport
+  };
+}
+
+async function refineDraftReport({
+  model,
+  researchBrief,
+  findings,
+  draftReport
+}: {
+  model: string;
+  researchBrief: string;
+  findings: string;
+  draftReport: string;
+}) {
+  const prompt = formatPrompt(reportGenerationWithDraftInsightPrompt, {
+    research_brief: researchBrief,
+    findings,
+    draft_report: draftReport,
+    date: getTodayStr()
+  });
+
+  const response = await createChatCompletion({
+    model,
+    messages: [{ role: "user", content: prompt }],
+    temperature: 0.3,
+    venice_parameters: {
+      include_venice_system_prompt: false,
+      strip_thinking_response: true
+    }
+  });
+
+  return response.choices[0]?.message?.content ?? draftReport;
+}
