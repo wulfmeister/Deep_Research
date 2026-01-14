@@ -14,7 +14,7 @@ export function useResearchHistory() {
   const [history, setHistory] = useState<ResearchRecord[]>([]);
 
   const refreshHistory = useCallback(async () => {
-    const allEntries = await entries<ResearchRecord>();
+    const allEntries = await entries<string, ResearchRecord>();
     const records = allEntries
       .map(([, value]) => value)
       .filter((value): value is ResearchRecord => Boolean(value))

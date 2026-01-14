@@ -1,12 +1,19 @@
 "use client";
 
-interface PdfExportProps {
+interface ExportButtonsProps {
   targetId: string;
+  markdown: string;
   filename?: string;
 }
 
-export default function PdfExport({ targetId, filename }: PdfExportProps) {
-  const handleExport = async () => {
+export default function ExportButtons({
+  targetId,
+  markdown,
+  filename
+}: ExportButtonsProps) {
+  const baseFilename = filename ?? "deep-research-report";
+
+  const handlePdfExport = async () => {
     const target = document.getElementById(targetId);
     if (!target) return;
 
@@ -15,16 +22,31 @@ export default function PdfExport({ targetId, filename }: PdfExportProps) {
       .from(target)
       .set({
         margin: 0.5,
-        filename: filename ?? "deep-research-report.pdf",
+        filename: `${baseFilename}.pdf`,
         html2canvas: { scale: 2 },
         jsPDF: { unit: "in", format: "letter", orientation: "portrait" }
       })
       .save();
   };
 
+  const handleMarkdownExport = () => {
+    const blob = new Blob([markdown], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${baseFilename}.md`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
-    <button onClick={handleExport} style={{ padding: "6px 12px" }}>
-      Download PDF
-    </button>
+    <div style={{ display: "flex", gap: 8 }}>
+      <button onClick={handlePdfExport} style={{ padding: "6px 12px" }}>
+        Download PDF
+      </button>
+      <button onClick={handleMarkdownExport} style={{ padding: "6px 12px" }}>
+        Export Markdown
+      </button>
+    </div>
   );
 }

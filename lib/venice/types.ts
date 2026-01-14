@@ -54,8 +54,22 @@ export interface ChatCompletionRequest {
   };
 }
 
+export interface VeniceCitation {
+  url: string;
+  title?: string;
+  snippet?: string;
+}
+
 export interface ChatCompletionResponse {
   choices: Array<{
     message: Message & { tool_calls?: ToolCall[] };
   }>;
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    total_tokens?: number;
+  };
+  venice_parameters?: {
+    web_search_citations?: Array<VeniceCitation | string>;
+  };
 }

@@ -3,6 +3,7 @@ import { runSupervisor } from "../../../lib/workflow/supervisor";
 import { generateFinalReport } from "../../../lib/workflow/report";
 import { Message } from "../../../lib/venice/types";
 import { SupervisorState } from "../../../lib/workflow/types";
+import { createResearchStats } from "../../../lib/venice/stats";
 
 export const runtime = "nodejs";
 
@@ -25,10 +26,11 @@ export async function POST(request: Request) {
     5
   );
 
+  const stats = createResearchStats();
   const messages: Message[] = [{ role: "user", content: body.prompt }];
 
-  const researchBrief = await writeResearchBrief(messages);
-  const draftReport = await writeDraftReport(researchBrief);
+  const researchBrief = await writeResearchBrief(messages, undefined, stats);
+  const draftReport = await writeDraftReport(researchBrief, undefined, stats);
 
   const initialSupervisorState: SupervisorState = {
     supervisorMessages: [
@@ -48,21 +50,28 @@ export async function POST(request: Request) {
     draftReport
   };
 
-  const supervisorResult = await runSupervisor(initialSupervisorState, {
-    maxIterations,
-    maxConcurrentResearchers
-  });
+  const supervisorResult = await runSupervisor(
+    initialSupervisorState,
+    {
+      maxIterations,
+      maxConcurrentResearchers
+    },
+    stats
+  );
 
   const findings = supervisorResult.notes.join("\n");
   const finalReport = await generateFinalReport({
     researchBrief,
     findings,
-    draftReport: supervisorResult.draftReport ?? draftReport
+    draftReport: supervisorResult.draftReport ?? draftReport,
+    stats
   });
 
   return Response.json({
     report: finalReport,
     researchBrief,
-    draftReport: supervisorResult.draftReport ?? draftReport
+    draftReport: supervisorResult.draftReport ?? draftReport,
+    topics: supervisorResult.topics,
+    stats
   });
 }

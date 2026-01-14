@@ -1,9 +1,15 @@
 import { createChatCompletion } from "../venice/client";
 import { Message } from "../venice/types";
+import { ResearchStats } from "../venice/stats";
 import { leadResearcherPrompt, reportGenerationWithDraftInsightPrompt } from "../prompts";
 import { DEFAULT_MODEL } from "./config";
 import { formatPrompt, getTodayStr } from "./utils";
-import { parseToolCalls, ResearcherResult, SupervisorState } from "./types";
+import {
+  parseToolCalls,
+  ResearcherResult,
+  SupervisorResult,
+  SupervisorState
+} from "./types";
 import { runResearcher } from "./researcher";
 
 export interface SupervisorConfig {
@@ -75,8 +81,9 @@ const supervisorTools = [
 
 export async function runSupervisor(
   state: SupervisorState,
-  config: SupervisorConfig
-) {
+  config: SupervisorConfig,
+  stats?: ResearchStats
+): Promise<SupervisorResult> {
   const model = config.model ?? DEFAULT_MODEL;
 
   let supervisorMessages = state.supervisorMessages;
@@ -84,6 +91,7 @@ export async function runSupervisor(
   let notes = state.notes;
   let rawNotes = state.rawNotes;
   let draftReport = state.draftReport ?? "";
+  let topics: string[] = [];
 
   while (researchIterations < config.maxIterations) {
     const systemPrompt = formatPrompt(leadResearcherPrompt, {
@@ -92,17 +100,23 @@ export async function runSupervisor(
       max_researcher_iterations: String(config.maxIterations)
     });
 
-    const response = await createChatCompletion({
-      model,
-      messages: [{ role: "system", content: systemPrompt }, ...supervisorMessages],
-      tools: supervisorTools,
-      temperature: 0.3,
-      parallel_tool_calls: true,
-      venice_parameters: {
-        include_venice_system_prompt: false,
-        strip_thinking_response: true
-      }
-    });
+    const response = await createChatCompletion(
+      {
+        model,
+        messages: [
+          { role: "system", content: systemPrompt },
+          ...supervisorMessages
+        ],
+        tools: supervisorTools,
+        temperature: 0.3,
+        parallel_tool_calls: true,
+        venice_parameters: {
+          include_venice_system_prompt: false,
+          strip_thinking_response: true
+        }
+      },
+      stats
+    );
 
     const assistantMessage = response.choices[0]?.message;
     const toolCalls = parseToolCalls(assistantMessage?.tool_calls);
@@ -120,33 +134,46 @@ export async function runSupervisor(
       (call) => call.name === "ConductResearch"
     );
     if (conductCalls.length > 0) {
-      const researchResults = await Promise.all(
-        conductCalls.map(async (call) => {
-          const researchTopic = String(call.arguments.research_topic ?? "");
-          if (!researchTopic) {
-            return {
-              call,
-              result: {
-                compressedResearch: "Missing research topic",
-                rawNotes: []
-              } as ResearcherResult
-            };
-          }
+      for (
+        let index = 0;
+        index < conductCalls.length;
+        index += config.maxConcurrentResearchers
+      ) {
+        const batch = conductCalls.slice(
+          index,
+          index + config.maxConcurrentResearchers
+        );
 
-          const result = await runResearcher(researchTopic, model);
-          return { call, result };
-        })
-      );
+        const researchResults = await Promise.all(
+          batch.map(async (call) => {
+            const researchTopic = String(call.arguments.research_topic ?? "");
+            if (!researchTopic) {
+              return {
+                call,
+                result: {
+                  compressedResearch: "Missing research topic",
+                  rawNotes: [],
+                  searchCount: 0
+                } as ResearcherResult
+              };
+            }
 
-      for (const { call, result } of researchResults) {
-        notes = [...notes, result.compressedResearch];
-        rawNotes = [...rawNotes, ...result.rawNotes];
-        toolMessages.push({
-          role: "tool",
-          name: call.name,
-          tool_call_id: call.id,
-          content: result.compressedResearch
-        });
+            topics = [...topics, researchTopic];
+            const result = await runResearcher(researchTopic, model, stats);
+            return { call, result };
+          })
+        );
+
+        for (const { call, result } of researchResults) {
+          notes = [...notes, result.compressedResearch];
+          rawNotes = [...rawNotes, ...result.rawNotes];
+          toolMessages.push({
+            role: "tool",
+            name: call.name,
+            tool_call_id: call.id,
+            content: result.compressedResearch
+          });
+        }
       }
     }
 
@@ -166,7 +193,8 @@ export async function runSupervisor(
           model,
           researchBrief: state.researchBrief,
           findings,
-          draftReport
+          draftReport,
+          stats
         });
         draftReport = refined;
 
@@ -188,7 +216,8 @@ export async function runSupervisor(
     researchIterations,
     notes,
     rawNotes,
-    draftReport
+    draftReport,
+    topics
   };
 }
 
@@ -196,12 +225,14 @@ async function refineDraftReport({
   model,
   researchBrief,
   findings,
-  draftReport
+  draftReport,
+  stats
 }: {
   model: string;
   researchBrief: string;
   findings: string;
   draftReport: string;
+  stats?: ResearchStats;
 }) {
   const prompt = formatPrompt(reportGenerationWithDraftInsightPrompt, {
     research_brief: researchBrief,
@@ -210,15 +241,18 @@ async function refineDraftReport({
     date: getTodayStr()
   });
 
-  const response = await createChatCompletion({
-    model,
-    messages: [{ role: "user", content: prompt }],
-    temperature: 0.3,
-    venice_parameters: {
-      include_venice_system_prompt: false,
-      strip_thinking_response: true
-    }
-  });
+  const response = await createChatCompletion(
+    {
+      model,
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.3,
+      venice_parameters: {
+        include_venice_system_prompt: false,
+        strip_thinking_response: true
+      }
+    },
+    stats
+  );
 
   return response.choices[0]?.message?.content ?? draftReport;
 }
