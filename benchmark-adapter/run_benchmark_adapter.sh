@@ -28,6 +28,8 @@ ENABLE_WEB_SCRAPING=""
 DISABLE_WEB_SCRAPING=""
 RETRIES=""
 RETRY_DELAY=""
+STREAM_READ_TIMEOUT=""
+CHECK_HEALTH=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -107,6 +109,18 @@ while [[ $# -gt 0 ]]; do
       RETRY_DELAY="--retry-delay $2"
       shift 2
       ;;
+    --stream-read-timeout)
+      if [[ -z "${2:-}" ]]; then
+        echo "Missing value for --stream-read-timeout" >&2
+        exit 1
+      fi
+      STREAM_READ_TIMEOUT="--stream-read-timeout $2"
+      shift 2
+      ;;
+    --check-health)
+      CHECK_HEALTH="--check-health"
+      shift
+      ;;
     *)
       echo "Unknown argument: $1" >&2
       exit 1
@@ -132,7 +146,9 @@ python3 "$ROOT_DIR/benchmark-adapter/adapter_nextjs.py" \
   $ENABLE_WEB_SCRAPING \
   $DISABLE_WEB_SCRAPING \
   $RETRIES \
-  $RETRY_DELAY
+  $RETRY_DELAY \
+  $STREAM_READ_TIMEOUT \
+  $CHECK_HEALTH
 
 cd "$BENCH_DIR"
 

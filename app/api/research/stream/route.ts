@@ -14,9 +14,25 @@ export const runtime = "nodejs";
 
 const encoder = new TextEncoder();
 
+class RequestAbortedError extends Error {
+  constructor() {
+    super("Request was aborted by the client");
+    this.name = "RequestAbortedError";
+  }
+}
+
+function checkAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) {
+    throw new RequestAbortedError();
+  }
+}
+
+const HEARTBEAT_INTERVAL_MS = 15000; // 15 seconds
+
 function createStreamHandler(
   send: (event: ProgressEvent) => void,
-  controller: ReadableStreamDefaultController
+  controller: ReadableStreamDefaultController,
+  abortSignal?: AbortSignal
 ) {
   return async (
     prompt: string,
@@ -25,7 +41,23 @@ function createStreamHandler(
     enableWebScraping: boolean
   ) => {
     const stats = createResearchStats();
+
+    // Start heartbeat interval to keep connection alive during long operations
+    const heartbeatInterval = setInterval(() => {
+      try {
+        send({ type: "heartbeat", timestamp: Date.now() });
+      } catch {
+        // Stream may be closed, interval will be cleared below
+      }
+    }, HEARTBEAT_INTERVAL_MS);
+
+    const cleanup = () => {
+      clearInterval(heartbeatInterval);
+    };
+
     try {
+      checkAborted(abortSignal);
+
       send({
         type: "ack",
         message: "Stream started",
@@ -37,9 +69,11 @@ function createStreamHandler(
         message: "Generating research brief"
       });
 
+      checkAborted(abortSignal);
       const messages: Message[] = [{ role: "user", content: prompt }];
       const researchBrief = await writeResearchBrief(messages, undefined, stats);
 
+      checkAborted(abortSignal);
       send({ type: "step_complete", step: "brief" });
       send({
         type: "step_start",
@@ -47,8 +81,10 @@ function createStreamHandler(
         message: "Writing draft report"
       });
 
+      checkAborted(abortSignal);
       const draftReport = await writeDraftReport(researchBrief, undefined, stats);
 
+      checkAborted(abortSignal);
       send({ type: "step_complete", step: "draft" });
       send({
         type: "step_start",
@@ -69,9 +105,11 @@ function createStreamHandler(
       };
 
       const onProgress: ProgressCallback = (event) => {
+        checkAborted(abortSignal);
         send(event);
       };
 
+      checkAborted(abortSignal);
       const supervisorResult = await runSupervisor(
         supervisorState,
         { maxIterations, maxConcurrentResearchers, enableWebScraping },
@@ -79,6 +117,7 @@ function createStreamHandler(
         onProgress
       );
 
+      checkAborted(abortSignal);
       send({ type: "step_complete", step: "research" });
       send({
         type: "step_start",
@@ -86,6 +125,7 @@ function createStreamHandler(
         message: "Generating final report"
       });
 
+      checkAborted(abortSignal);
       const report = await generateFinalReport({
         researchBrief,
         findings: supervisorResult.notes.join("\n"),
@@ -93,6 +133,7 @@ function createStreamHandler(
         stats
       });
 
+      checkAborted(abortSignal);
       send({ type: "step_complete", step: "final" });
       send({
         type: "complete",
@@ -101,8 +142,18 @@ function createStreamHandler(
         stats
       });
 
+      cleanup();
       controller.close();
     } catch (error) {
+      cleanup();
+      if (error instanceof RequestAbortedError) {
+        try {
+          controller.close();
+        } catch {
+          // Controller may already be closed
+        }
+        return;
+      }
       const message = error instanceof Error ? error.message : "Unknown error";
       send({ type: "error", message });
       controller.close();
@@ -114,16 +165,32 @@ function createStreamResponse(
   prompt: string,
   maxIterations: number,
   maxConcurrentResearchers: number,
-  enableWebScraping: boolean
+  enableWebScraping: boolean,
+  requestSignal?: AbortSignal
 ) {
+  const abortController = new AbortController();
+
+  if (requestSignal) {
+    requestSignal.addEventListener("abort", () => {
+      abortController.abort();
+    });
+  }
+
   const stream = new ReadableStream({
     start(controller) {
       const send = (event: ProgressEvent) => {
-        controller.enqueue(encoder.encode(formatSseEvent(event)));
+        try {
+          controller.enqueue(encoder.encode(formatSseEvent(event)));
+        } catch {
+          // Stream may be closed
+        }
       };
 
-      const handler = createStreamHandler(send, controller);
+      const handler = createStreamHandler(send, controller, abortController.signal);
       void handler(prompt, maxIterations, maxConcurrentResearchers, enableWebScraping);
+    },
+    cancel() {
+      abortController.abort();
     }
   });
 
@@ -158,7 +225,8 @@ export async function GET(request: Request) {
     prompt,
     maxIterations,
     maxConcurrentResearchers,
-    enableWebScraping
+    enableWebScraping,
+    request.signal
   );
 }
 
@@ -172,7 +240,7 @@ export async function POST(request: Request) {
 
   try {
     payload = await request.json();
-  } catch (error) {
+  } catch {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
@@ -193,6 +261,7 @@ export async function POST(request: Request) {
     prompt,
     maxIterations,
     maxConcurrentResearchers,
-    enableWebScraping
+    enableWebScraping,
+    request.signal
   );
 }

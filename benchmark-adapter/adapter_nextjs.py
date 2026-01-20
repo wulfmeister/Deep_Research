@@ -3,9 +3,12 @@ import json
 import sys
 import time
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import requests
+
+
+STREAM_READ_TIMEOUT = 60  # seconds without data before considering stream stalled
 
 
 def load_jsonl(path: Path) -> List[Dict[str, object]]:
@@ -26,6 +29,17 @@ def append_jsonl(path: Path, rows: List[Dict[str, object]]) -> None:
       file.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
+def check_api_health(base_url: str, timeout: int = 10) -> bool:
+  """Check if the API is reachable and responding."""
+  try:
+    response = requests.get(f"{base_url}/api/research/stream", timeout=timeout)
+    # A 400 error is expected since we're not passing a prompt
+    return response.status_code in (200, 400)
+  except requests.RequestException as e:
+    print(f"[health] API health check failed: {e}")
+    return False
+
+
 def request_report(base_url: str, payload: Dict[str, object], timeout: int) -> str:
   response = requests.post(f"{base_url}/api/research", json=payload, timeout=timeout)
   response.raise_for_status()
@@ -36,41 +50,105 @@ def request_report(base_url: str, payload: Dict[str, object], timeout: int) -> s
   return report
 
 
-def stream_progress(base_url: str, payload: Dict[str, object], timeout: int) -> str:
-  report: str | None = None
+def stream_progress(
+  base_url: str,
+  payload: Dict[str, object],
+  timeout: int,
+  read_timeout: int = STREAM_READ_TIMEOUT
+) -> str:
+  """Stream SSE events with read timeout to detect stalled streams."""
+  report: Optional[str] = None
+
+  # Use a tuple for timeout: (connect_timeout, read_timeout)
+  # The read_timeout applies to each chunk read
   with requests.post(
     f"{base_url}/api/research/stream",
     json=payload,
     stream=True,
-    timeout=timeout
+    timeout=(30, read_timeout)  # 30s connect, read_timeout for reads
   ) as response:
     response.raise_for_status()
-    for line in response.iter_lines(decode_unicode=True):
-      if not line:
+
+    last_data_time = time.time()
+    buffer = ""
+
+    # Use iter_content for more control over buffering
+    for chunk in response.iter_content(chunk_size=8192, decode_unicode=True):
+      current_time = time.time()
+
+      # Check for stalled stream
+      if current_time - last_data_time > read_timeout:
+        raise TimeoutError(f"Stream stalled: no data received for {read_timeout}s")
+
+      if not chunk:
         continue
-      if not line.startswith("data: "):
-        continue
-      data = line[len("data: ") :]
-      print(f"[stream] {data}")
-      try:
-        event = json.loads(data)
-      except json.JSONDecodeError:
-        continue
-      if not isinstance(event, dict):
-        continue
-      if event.get("type") == "error":
-        message = event.get("message")
-        if isinstance(message, str):
-          raise ValueError(message)
-        raise ValueError("Stream error")
-      if event.get("type") == "complete":
-        event_report = event.get("report")
-        if isinstance(event_report, str):
-          report = event_report
+
+      last_data_time = current_time
+      buffer += chunk
+
+      # Process complete SSE events (terminated by double newline)
+      while "\n\n" in buffer:
+        event_data, buffer = buffer.split("\n\n", 1)
+
+        # Extract data from SSE event
+        for line in event_data.split("\n"):
+          if not line.startswith("data: "):
+            continue
+
+          data = line[len("data: "):]
+          # Truncate log for large payloads
+          log_data = data if len(data) < 500 else data[:200] + f"... ({len(data)} chars)"
+          print(f"[stream] {log_data}")
+
+          try:
+            event = json.loads(data)
+          except json.JSONDecodeError:
+            continue
+
+          if not isinstance(event, dict):
+            continue
+
+          if event.get("type") == "error":
+            message = event.get("message")
+            if isinstance(message, str):
+              raise ValueError(message)
+            raise ValueError("Stream error")
+
+          # Heartbeat events keep connection alive but are not logged
+          if event.get("type") == "heartbeat":
+            continue
+
+          if event.get("type") == "complete":
+            event_report = event.get("report")
+            if isinstance(event_report, str):
+              report = event_report
+              break
+
+        if report is not None:
           break
+
   if report is None:
     raise ValueError("Stream ended without report")
   return report
+
+
+def log_failed_task(
+  output_dir: Path,
+  task_id: str | int,
+  prompt: str,
+  error: str,
+  attempts: int
+) -> None:
+  """Log a failed task to failed_tasks.jsonl."""
+  failed_path = output_dir / "failed_tasks.jsonl"
+  failed_row = {
+    "id": str(task_id),
+    "prompt": prompt,
+    "error": error,
+    "attempts": attempts,
+    "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+  }
+  append_jsonl(failed_path, [failed_row])
 
 
 def main() -> None:
@@ -79,33 +157,66 @@ def main() -> None:
   parser.add_argument("--model-name", default="nextjs-agent", help="Output model name")
   parser.add_argument("--max-iterations", type=int, default=15)
   parser.add_argument("--max-concurrent-researchers", type=int, default=3)
-  parser.add_argument("--enable-web-scraping", action="store_true", default=True)
-  parser.add_argument("--disable-web-scraping", action="store_true", default=False)
+
+  # Mutually exclusive web scraping flags
+  scraping_group = parser.add_mutually_exclusive_group()
+  scraping_group.add_argument(
+    "--enable-web-scraping",
+    dest="enable_web_scraping",
+    action="store_true",
+    help="Enable web scraping (default)"
+  )
+  scraping_group.add_argument(
+    "--disable-web-scraping",
+    dest="enable_web_scraping",
+    action="store_false",
+    help="Disable web scraping"
+  )
+  parser.set_defaults(enable_web_scraping=True)
+
   parser.add_argument("--limit", type=int, default=0, help="Limit number of tasks (0 = all)")
   parser.add_argument("--timeout", type=int, default=600)
-  parser.add_argument("--resume", action="store_true", default=True)
-  parser.add_argument("--no-resume", action="store_true", default=False)
+  parser.add_argument("--stream-read-timeout", type=int, default=STREAM_READ_TIMEOUT,
+                      help="Timeout for stream reads (seconds without data)")
+
+  # Mutually exclusive resume flags
+  resume_group = parser.add_mutually_exclusive_group()
+  resume_group.add_argument(
+    "--resume",
+    dest="resume",
+    action="store_true",
+    help="Resume from existing output (default)"
+  )
+  resume_group.add_argument(
+    "--no-resume",
+    dest="resume",
+    action="store_false",
+    help="Start fresh, ignoring existing output"
+  )
+  parser.set_defaults(resume=True)
+
   parser.add_argument("--verbose", action="store_true", default=False)
   parser.add_argument("--stream-progress", action="store_true", default=False)
   parser.add_argument("--retries", type=int, default=1)
   parser.add_argument("--retry-delay", type=int, default=5)
   parser.add_argument("--query-file", default="../deep_research_bench_reference/data/prompt_data/query.jsonl")
   parser.add_argument("--output-dir", default="../deep_research_bench_reference/data/test_data/raw_data")
+  parser.add_argument("--check-health", action="store_true", default=False,
+                      help="Check API health before starting")
 
   args = parser.parse_args()
 
-  enable_web_scraping = True
-  if args.disable_web_scraping:
-    enable_web_scraping = False
-  elif args.enable_web_scraping:
-    enable_web_scraping = True
-
-  resume = True
-  if args.no_resume:
-    resume = False
-
   query_path = Path(args.query_file)
-  output_path = Path(args.output_dir) / f"{args.model_name}.jsonl"
+  output_dir = Path(args.output_dir)
+  output_path = output_dir / f"{args.model_name}.jsonl"
+
+  # Health check
+  if args.check_health:
+    print(f"[health] Checking API at {args.base_url}...")
+    if not check_api_health(args.base_url):
+      print("[health] API is not available. Exiting.")
+      sys.exit(1)
+    print("[health] API is available.")
 
   if not query_path.exists():
     print(f"Query file not found: {query_path}")
@@ -117,13 +228,15 @@ def main() -> None:
 
   if args.verbose:
     print(
-      "Loaded {} tasks from {} (limit={}, resume={}, scraping={}, timeout={}s, maxIterations={}, maxConcurrentResearchers={}, retries={})".format(
+      "Loaded {} tasks from {} (limit={}, resume={}, scraping={}, timeout={}s, "
+      "streamReadTimeout={}s, maxIterations={}, maxConcurrentResearchers={}, retries={})".format(
         len(tasks),
         query_path,
         args.limit,
-        resume,
-        enable_web_scraping,
+        args.resume,
+        args.enable_web_scraping,
         args.timeout,
+        args.stream_read_timeout,
         args.max_iterations,
         args.max_concurrent_researchers,
         args.retries,
@@ -131,7 +244,7 @@ def main() -> None:
     )
 
   existing_ids = set()
-  if resume and output_path.exists():
+  if args.resume and output_path.exists():
     for row in load_jsonl(output_path):
       task_id = row.get("id")
       if isinstance(task_id, (str, int)):
@@ -144,6 +257,7 @@ def main() -> None:
 
   rows: List[Dict[str, object]] = []
   processed = 0
+  failed = 0
   total = len(tasks)
 
   def flush_rows() -> None:
@@ -159,25 +273,34 @@ def main() -> None:
     if not isinstance(task_id, (str, int)) or not isinstance(prompt, str):
       continue
 
-    if resume and task_id in existing_ids:
+    if args.resume and task_id in existing_ids:
       continue
 
     payload = {
       "prompt": prompt,
       "maxIterations": args.max_iterations,
       "maxConcurrentResearchers": args.max_concurrent_researchers,
-      "enableWebScraping": enable_web_scraping
+      "enableWebScraping": args.enable_web_scraping
     }
 
     if args.verbose:
       print("Requesting {} at {}".format(task_id, args.base_url))
 
     attempt = 0
-    while True:
+    last_error = ""
+    success = False
+
+    while attempt <= args.retries:
+      attempt += 1
       try:
         start_time = time.time()
         if args.stream_progress:
-          report = stream_progress(args.base_url, payload, args.timeout)
+          report = stream_progress(
+            args.base_url,
+            payload,
+            args.timeout,
+            args.stream_read_timeout
+          )
         else:
           report = request_report(args.base_url, payload, args.timeout)
         elapsed = time.time() - start_time
@@ -189,20 +312,25 @@ def main() -> None:
         processed += 1
         print("[{}/{}] Completed {} ({:.1f}s)".format(processed, total, task_id, elapsed))
         flush_rows()
+        success = True
         break
       except Exception as exc:
-        attempt += 1
-        print("[error] {} (attempt {}/{}): {}".format(task_id, attempt, args.retries, exc))
-        if attempt > args.retries:
-          break
-        time.sleep(args.retry_delay)
+        last_error = str(exc)
+        print("[error] {} (attempt {}/{}): {}".format(task_id, attempt, args.retries + 1, exc))
+        if attempt <= args.retries:
+          time.sleep(args.retry_delay)
+
+    if not success:
+      failed += 1
+      log_failed_task(output_dir, task_id, prompt, last_error, attempt)
+      print(f"[failed] {task_id} logged to failed_tasks.jsonl")
 
     if args.stream_progress:
       time.sleep(0.25)
 
   flush_rows()
 
-  print("Done. Output: {}".format(output_path))
+  print("Done. Completed: {}, Failed: {}, Output: {}".format(processed, failed, output_path))
 
 
 if __name__ == "__main__":

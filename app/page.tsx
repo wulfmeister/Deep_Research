@@ -169,6 +169,22 @@ export default function HomePage() {
     }
   };
 
+  const handleCancel = () => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+    setLoading(false);
+    setError("Research cancelled by user");
+    setSteps((prev) => {
+      const running = prev.find((step) => step.status === "running");
+      if (!running) return prev;
+      return prev.map((step) =>
+        step.id === running.id ? { ...step, status: "error" } : step
+      );
+    });
+  };
+
   const handleStreamingSubmit = () => {
     eventSourceRef.current?.close();
     eventSourceRef.current = null;
@@ -362,6 +378,7 @@ export default function HomePage() {
           setEnableWebScraping(enableWebScraping);
         }}
         onSubmit={handleStreamingSubmit}
+        onCancel={handleCancel}
         loading={loading}
       />
 

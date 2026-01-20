@@ -3,7 +3,7 @@ import { Message } from "../venice/types";
 import { ResearchStats } from "../venice/stats";
 import { leadResearcherPrompt, reportGenerationWithDraftInsightPrompt } from "../prompts";
 import { DEFAULT_MODEL } from "./config";
-import { formatPrompt, getTodayStr } from "./utils";
+import { formatPrompt, getTodayStr, estimateMessagesTokenCount } from "./utils";
 import { ProgressCallback } from "./progress";
 import {
   parseToolCalls,
@@ -13,11 +13,48 @@ import {
 } from "./types";
 import { runResearcher } from "./researcher";
 
+const MAX_CONTEXT_TOKENS = 100000;
+const RECENT_MESSAGES_TO_KEEP = 6;
+
 export interface SupervisorConfig {
   maxIterations: number;
   maxConcurrentResearchers: number;
   enableWebScraping?: boolean;
   model?: string;
+}
+
+function truncateMessagesIfNeeded(messages: Message[]): Message[] {
+  const tokenCount = estimateMessagesTokenCount(messages);
+  if (tokenCount < MAX_CONTEXT_TOKENS) {
+    return messages;
+  }
+
+  if (messages.length <= RECENT_MESSAGES_TO_KEEP) {
+    return messages;
+  }
+
+  const recentMessages = messages.slice(-RECENT_MESSAGES_TO_KEEP);
+  const olderMessages = messages.slice(0, -RECENT_MESSAGES_TO_KEEP);
+
+  let summary = "Previous research context (summarized due to length):\n";
+  for (const msg of olderMessages) {
+    if (msg.role === "tool" && msg.content) {
+      const content = msg.content;
+      const truncated =
+        content.length > 500 ? content.slice(0, 500) + "..." : content;
+      summary += `- [Tool ${msg.name ?? "result"}]: ${truncated}\n`;
+    } else if (msg.role === "assistant" && msg.tool_calls) {
+      const toolNames = msg.tool_calls.map((tc) => tc.function.name).join(", ");
+      summary += `- [Called tools: ${toolNames}]\n`;
+    }
+  }
+
+  const summaryMessage: Message = {
+    role: "user",
+    content: summary
+  };
+
+  return [summaryMessage, ...recentMessages];
 }
 
 const supervisorTools = [
@@ -103,12 +140,14 @@ export async function runSupervisor(
       max_researcher_iterations: String(config.maxIterations)
     });
 
+    const truncatedMessages = truncateMessagesIfNeeded(supervisorMessages);
+
     const response = await createChatCompletion(
       {
         model,
         messages: [
           { role: "system", content: systemPrompt },
-          ...supervisorMessages
+          ...truncatedMessages
         ],
         tools: supervisorTools,
         temperature: 0.3,

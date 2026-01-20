@@ -1,7 +1,8 @@
 # Deep Research (Venice + Next.js)
 
 This project ports the original ThinkDepth deep-research workflow to a Venice-powered Next.js app.
-Legacy Python code is preserved under `python_reference/` for reference.
+Legacy Python code is preserved under `python_reference/` for reference. (Do not edit in that folder). The URL for the original repo is here: https://github.com/thinkdepthai/Deep_Research
+Original Python benchmark code is preserved under `deep_research_bench_reference/` for reference. (Do not edit in that folder). The URL for the original repo is here: https://github.com/Ayanami0730/deep_research_bench
 
 ## Local setup
 

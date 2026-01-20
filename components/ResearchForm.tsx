@@ -12,6 +12,7 @@ interface ResearchFormProps {
     enableWebScraping: boolean;
   }) => void;
   onSubmit: () => void;
+  onCancel?: () => void;
   loading: boolean;
 }
 
@@ -23,6 +24,7 @@ export default function ResearchForm({
   enableWebScraping,
   onSettingsChange,
   onSubmit,
+  onCancel,
   loading
 }: ResearchFormProps) {
   return (
@@ -84,13 +86,24 @@ export default function ResearchForm({
           />
           Enable web scraping
         </label>
-        <button
-          onClick={onSubmit}
-          disabled={loading || !prompt.trim()}
-          style={{ marginLeft: "auto", padding: "8px 16px" }}
-        >
-          {loading ? "Running..." : "Run Research"}
-        </button>
+        <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+          {loading && onCancel && (
+            <button
+              onClick={onCancel}
+              type="button"
+              style={{ padding: "8px 16px" }}
+            >
+              Cancel
+            </button>
+          )}
+          <button
+            onClick={onSubmit}
+            disabled={loading || !prompt.trim()}
+            style={{ padding: "8px 16px" }}
+          >
+            {loading ? "Running..." : "Run Research"}
+          </button>
+        </div>
       </div>
     </section>
   );

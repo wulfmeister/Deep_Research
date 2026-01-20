@@ -21,7 +21,8 @@ export type ProgressEvent =
     }
   | { type: "topic_complete"; topic: string; searchCount: number }
   | { type: "error"; message: string }
-  | { type: "complete"; report: string; topics: string[]; stats: ResearchStats };
+  | { type: "complete"; report: string; topics: string[]; stats: ResearchStats }
+  | { type: "heartbeat"; timestamp: number };
 
 export type ProgressCallback = (event: ProgressEvent) => void;
 
