@@ -54,3 +54,72 @@ section {
 .history-item:last-child {
   border-bottom: none;
 }
+
+.progress-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.progress-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.progress-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-icon {
+  width: 18px;
+  text-align: center;
+  font-size: 0.95rem;
+  color: #3b3b46;
+}
+
+.substep-list {
+  margin-left: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.substep {
+  font-size: 0.9rem;
+  color: #4b5563;
+}
+
+.topic-list {
+  margin-left: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.topic-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.topic-title {
+  font-size: 0.95rem;
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #d7d7e0;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

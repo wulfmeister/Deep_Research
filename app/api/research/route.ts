@@ -11,6 +11,7 @@ interface ResearchRequest {
   prompt: string;
   maxIterations?: number;
   maxConcurrentResearchers?: number;
+  enableWebScraping?: boolean;
 }
 
 export async function POST(request: Request) {
@@ -54,7 +55,8 @@ export async function POST(request: Request) {
     initialSupervisorState,
     {
       maxIterations,
-      maxConcurrentResearchers
+      maxConcurrentResearchers,
+      enableWebScraping: body.enableWebScraping ?? true
     },
     stats
   );

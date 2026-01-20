@@ -8,9 +8,9 @@ import {
 } from "../prompts";
 import { DEFAULT_MODEL, MAX_SEARCH_ITERATIONS } from "./config";
 import { formatPrompt, getTodayStr } from "./utils";
+import { ProgressCallback } from "./progress";
 import {
   ResearcherResult,
-  ResearcherToolCall,
   researcherTools,
   parseResearcherToolCalls
 } from "./types";
@@ -27,7 +27,8 @@ interface SearchResult {
 async function executeWebSearch(
   query: string,
   model: string,
-  stats?: ResearchStats
+  stats?: ResearchStats,
+  enableWebScraping?: boolean
 ): Promise<SearchResult> {
   if (process.env.VENICE_DEBUG === "1") {
     console.log(`[venice] web_search query: "${query}"`);
@@ -49,6 +50,7 @@ async function executeWebSearch(
       temperature: 0.3,
       venice_parameters: {
         enable_web_search: "on",
+        enable_web_scraping: enableWebScraping ? true : undefined,
         enable_web_citations: true,
         include_venice_system_prompt: false,
         strip_thinking_response: true
@@ -77,7 +79,9 @@ async function executeWebSearch(
 async function runResearcherLoop(
   researchTopic: string,
   model: string,
-  stats?: ResearchStats
+  stats?: ResearchStats,
+  onProgress?: ProgressCallback,
+  enableWebScraping?: boolean
 ): Promise<{ messages: Message[]; allCitations: VeniceCitation[]; searchCount: number }> {
   const systemPrompt = formatPrompt(researchAgentPrompt, {
     date: getTodayStr()
@@ -151,17 +155,33 @@ async function runResearcherLoop(
           continue;
         }
 
+        const searchIndex = searchCount + 1;
+        onProgress?.({
+          type: "topic_search",
+          topic: researchTopic,
+          searchIndex,
+          query
+        });
+
         // Execute the search
-        const searchResult = await executeWebSearch(query, model, stats);
-        searchCount++;
+        const searchResult = await executeWebSearch(
+          query,
+          model,
+          stats,
+          enableWebScraping
+        );
+        searchCount += 1;
 
         // Collect citations
         allCitations.push(...searchResult.citations);
 
         // Format the search result with citations
-        const citationInfo = searchResult.citations.length > 0
-          ? `\n\nSources found:\n${searchResult.citations.map((c, i) => `[${i + 1}] ${c.title || "Source"}: ${c.url}`).join("\n")}`
-          : "";
+        const citationInfo =
+          searchResult.citations.length > 0
+            ? `\n\nSources found:\n${searchResult.citations
+                .map((c, i) => `[${i + 1}] ${c.title || "Source"}: ${c.url}`)
+                .join("\n")}`
+            : "";
 
         messages.push({
           role: "tool",
@@ -196,13 +216,17 @@ async function runResearcherLoop(
 export async function runResearcher(
   researchTopic: string,
   model = DEFAULT_MODEL,
-  stats?: ResearchStats
+  stats?: ResearchStats,
+  onProgress?: ProgressCallback,
+  enableWebScraping?: boolean
 ): Promise<ResearcherResult> {
   // Run the research loop
   const { messages, allCitations, searchCount } = await runResearcherLoop(
     researchTopic,
     model,
-    stats
+    stats,
+    onProgress,
+    enableWebScraping
   );
 
   // Extract raw research content from messages

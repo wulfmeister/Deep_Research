@@ -79,8 +79,36 @@ This mirrors the Python reference implementation where each research topic trigg
 | `VENICE_API_KEY` | Yes | Your Venice API key |
 | `VENICE_DEBUG` | No | Set to `1` to log search queries and citations |
 
+## Benchmark adapter
+
+The benchmark reference repo lives in `deep_research_bench_reference/` (read-only). Use the adapter in `benchmark-adapter/` to generate benchmark outputs and optionally run RACE/FACT without modifying reference files.
+
+### Quick run
+
+1. Start the app:
+
+```
+npm run dev
+```
+
+2. Run the adapter and benchmark:
+
+```
+./benchmark-adapter/run_benchmark_adapter.sh --model-name nextjs-agent --base-url http://localhost:3000
+```
+
+The adapter auto-loads `.env` or `.env.local` if present. Store `GEMINI_API_KEY` and `JINA_API_KEY` there for FACT evaluation.
+
+### Flags
+
+- `--race-only`: Skip FACT evaluation (no Jina/Gemini needed for FACT)
+- `--limit 5`: Run a small sample (first 5 tasks)
+- `--model-name <name>`: Output JSONL name under `deep_research_bench_reference/data/test_data/raw_data/`
+- `--base-url <url>`: Point at local or remote API
+
 ## Notes
 - The UI is intentionally minimal (single prompt + report view).
 - Reports are stored locally in IndexedDB.
 - PDF export uses `html2pdf.js`.
 - Each web search is a separate Venice API call with Brave search enabled.
+- Reference-only folders: do not edit `deep_research_bench_reference/` or `python_reference/` unless explicitly requested.

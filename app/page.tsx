@@ -1,10 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ResearchForm from "../components/ResearchForm";
 import ReportViewer from "../components/ReportViewer";
 import ExportButtons from "../components/PdfExport";
+import ProgressSteps, {
+  ProgressStep,
+  StepStatus,
+  TopicProgress
+} from "../components/ProgressSteps";
 import { useResearchHistory } from "../hooks/useResearchHistory";
+import { MAX_SEARCH_ITERATIONS } from "../lib/workflow/config";
+import type { ProgressEvent } from "../lib/workflow/progress";
 import {
   createResearchStats,
   mergeResearchStats,
@@ -17,28 +24,38 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const [maxIterations, setMaxIterations] = useState(15);
   const [maxConcurrentResearchers, setMaxConcurrentResearchers] = useState(3);
+  const [enableWebScraping, setEnableWebScraping] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [topics, setTopics] = useState<string[]>([]);
   const [stats, setStats] = useState<ResearchStats | null>(null);
+  const [topicProgress, setTopicProgress] = useState<TopicProgress[]>([]);
+  const eventSourceRef = useRef<EventSource | null>(null);
 
-  type StepStatus = "pending" | "running" | "done" | "error";
-
-  interface Step {
-    id: string;
-    label: string;
-    status: StepStatus;
-  }
-
-  const initialSteps: Step[] = [
-    { id: "brief", label: "Generate research brief", status: "pending" },
-    { id: "draft", label: "Write draft report", status: "pending" },
-    { id: "research", label: "Run research", status: "pending" },
-    { id: "final", label: "Generate final report", status: "pending" }
+  const initialSteps: ProgressStep[] = [
+    {
+      id: "brief",
+      label: "Generate research brief",
+      status: "pending",
+      substeps: []
+    },
+    { id: "draft", label: "Write draft report", status: "pending", substeps: [] },
+    { id: "research", label: "Run research", status: "pending", substeps: [] },
+    {
+      id: "final",
+      label: "Generate final report",
+      status: "pending",
+      substeps: []
+    }
   ];
 
-  const [steps, setSteps] = useState<Step[]>(initialSteps);
+  const [steps, setSteps] = useState<ProgressStep[]>(initialSteps);
 
   const { history, saveRecord } = useResearchHistory();
+
+  useEffect(() => {
+    return () => {
+      eventSourceRef.current?.close();
+    };
+  }, []);
 
   const setStepStatus = (id: string, status: StepStatus) => {
     setSteps((prev) =>
@@ -47,14 +64,158 @@ export default function HomePage() {
   };
 
   const resetSteps = () => {
-    setSteps(initialSteps.map((step) => ({ ...step } as Step)));
+    setSteps(initialSteps.map((step) => ({ ...step, substeps: [] })));
+    setTopicProgress([]);
+  };
+
+  const addSubstep = (stepId: string, message: string) => {
+    setSteps((prev) =>
+      prev.map((step) => {
+        if (step.id !== stepId) return step;
+        if (step.substeps.includes(message)) return step;
+        return { ...step, substeps: [...step.substeps, message] };
+      })
+    );
+  };
+
+  const updateTopic = (
+    topic: string,
+    update: (current: TopicProgress | undefined) => TopicProgress
+  ) => {
+    setTopicProgress((prev) => {
+      const existing = prev.find((entry) => entry.name === topic);
+      const updated = update(existing);
+      if (existing) {
+        return prev.map((entry) => (entry.name === topic ? updated : entry));
+      }
+      return [...prev, updated];
+    });
+  };
+
+  const handleProgressEvent = (event: ProgressEvent) => {
+    switch (event.type) {
+      case "step_start":
+        setStepStatus(event.step, "running");
+        if (event.message) {
+          addSubstep(event.step, event.message);
+        }
+        break;
+      case "step_complete":
+        setStepStatus(event.step, "done");
+        break;
+      case "substep":
+        addSubstep(event.step, event.message);
+        break;
+      case "topic_start":
+        addSubstep(
+          "research",
+          `Running searches across ${event.totalTopics} topic${
+            event.totalTopics === 1 ? "" : "s"
+          }`
+        );
+        updateTopic(event.topic, (current) => ({
+          name: event.topic,
+          status: current?.status ?? "running",
+          index: event.topicIndex,
+          total: event.totalTopics,
+          searchCount: current?.searchCount ?? 0,
+          currentSearch: current?.currentSearch
+        }));
+        break;
+      case "topic_search":
+        updateTopic(event.topic, (current) => ({
+          name: event.topic,
+          status: "running",
+          index: current?.index ?? 1,
+          total: current?.total ?? 1,
+          searchCount: Math.max(current?.searchCount ?? 0, event.searchIndex),
+          currentSearch: { index: event.searchIndex, query: event.query }
+        }));
+        break;
+      case "topic_complete":
+        updateTopic(event.topic, (current) => ({
+          name: event.topic,
+          status: "done",
+          index: current?.index ?? 1,
+          total: current?.total ?? 1,
+          searchCount: event.searchCount,
+          currentSearch: undefined
+        }));
+        break;
+      case "complete":
+        setStats(event.stats);
+        setReport(event.report);
+        setLoading(false);
+        void saveRecord({
+          id: crypto.randomUUID(),
+          prompt,
+          report: event.report,
+          createdAt: new Date().toISOString()
+        });
+        break;
+      case "error":
+        setError(event.message);
+        setSteps((prev) => {
+          const running = prev.find((step) => step.status === "running");
+          if (!running) return prev;
+          return prev.map((step) =>
+            step.id === running.id ? { ...step, status: "error" } : step
+          );
+        });
+        setLoading(false);
+        break;
+      default:
+        break;
+    }
+  };
+
+  const handleStreamingSubmit = () => {
+    eventSourceRef.current?.close();
+    eventSourceRef.current = null;
+    setLoading(true);
+    setError(null);
+    setReport("");
+    setStats(createResearchStats());
+    resetSteps();
+
+    const params = new URLSearchParams({
+      prompt,
+      maxIterations: String(maxIterations),
+      maxConcurrentResearchers: String(maxConcurrentResearchers),
+      enableWebScraping: String(enableWebScraping)
+    });
+
+    const eventSource = new EventSource(`/api/research/stream?${params}`);
+    eventSourceRef.current = eventSource;
+    let receivedEvent = false;
+
+    eventSource.onmessage = (message) => {
+      receivedEvent = true;
+      const data = JSON.parse(message.data) as ProgressEvent;
+      handleProgressEvent(data);
+
+      if (data.type === "complete" || data.type === "error") {
+        eventSource.close();
+        eventSourceRef.current = null;
+      }
+    };
+
+    eventSource.onerror = () => {
+      eventSource.close();
+      eventSourceRef.current = null;
+      if (!receivedEvent) {
+        void handleSubmit();
+        return;
+      }
+      setError("Streaming connection lost. Please retry.");
+      setLoading(false);
+    };
   };
 
   const handleSubmit = async () => {
     setLoading(true);
     setError(null);
     setReport("");
-    setTopics([]);
     setStats(createResearchStats());
     resetSteps();
 
@@ -107,7 +268,8 @@ export default function HomePage() {
           researchBrief: briefData.researchBrief,
           draftReport: draftData.draftReport,
           maxIterations,
-          maxConcurrentResearchers
+          maxConcurrentResearchers,
+          enableWebScraping
         })
       });
 
@@ -125,7 +287,16 @@ export default function HomePage() {
         mergeResearchStats(prev ?? createResearchStats(), supervisorData.stats)
       );
       setStepStatus("research", "done");
-      setTopics(supervisorData.topics ?? []);
+      const completedTopics = supervisorData.topics ?? [];
+      setTopicProgress(
+        completedTopics.map((topic, index) => ({
+          name: topic,
+          status: "done",
+          index: index + 1,
+          total: completedTopics.length,
+          searchCount: 0
+        }))
+      );
 
       setStepStatus("final", "running");
       const finalResponse = await fetch("/api/research/final", {
@@ -180,32 +351,25 @@ export default function HomePage() {
         onPromptChange={setPrompt}
         maxIterations={maxIterations}
         maxConcurrentResearchers={maxConcurrentResearchers}
-        onSettingsChange={({ maxIterations, maxConcurrentResearchers }) => {
+        enableWebScraping={enableWebScraping}
+        onSettingsChange={({
+          maxIterations,
+          maxConcurrentResearchers,
+          enableWebScraping
+        }) => {
           setMaxIterations(maxIterations);
           setMaxConcurrentResearchers(maxConcurrentResearchers);
+          setEnableWebScraping(enableWebScraping);
         }}
-        onSubmit={handleSubmit}
+        onSubmit={handleStreamingSubmit}
         loading={loading}
       />
 
-      <section className="card">
-        <h2>Progress</h2>
-        {steps.map((step) => (
-          <div key={step.id} style={{ marginBottom: 8 }}>
-            <strong>{step.label}</strong> — {step.status}
-          </div>
-        ))}
-        {topics.length > 0 && (
-          <div style={{ marginTop: 12 }}>
-            <strong>Topics</strong>
-            <ul>
-              {topics.map((topic, index) => (
-                <li key={`${topic}-${index}`}>{topic}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </section>
+      <ProgressSteps
+        steps={steps}
+        topics={topicProgress}
+        maxSearchIterations={MAX_SEARCH_ITERATIONS}
+      />
 
       {error && (
         <section className="card">
@@ -223,11 +387,10 @@ export default function HomePage() {
         </div>
         {report && stats && (
           <p style={{ marginTop: 12 }}>
-            API calls: {stats.apiCalls} · Searches: {stats.searchCalls} · Tokens:
-            {" "}
-            {stats.promptTokens + stats.completionTokens} · Est. cost: ~$
-            {stats.estimatedCost.toFixed(2)}
-            {!stats.pricingIncludesModel ? " (search only)" : ""}
+            API calls: {stats.apiCalls} · Searches: {stats.searchCalls} · Scrapes: {" "}
+            {stats.scrapingCalls} · Tokens: {stats.promptTokens + stats.completionTokens} · Est.
+            cost: ~${stats.estimatedCost.toFixed(2)}
+            {!stats.pricingIncludesModel ? " (search/scrape only)" : ""}
           </p>
         )}
       </section>

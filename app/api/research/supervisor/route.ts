@@ -9,6 +9,7 @@ interface SupervisorRequest {
   draftReport: string;
   maxIterations?: number;
   maxConcurrentResearchers?: number;
+  enableWebScraping?: boolean;
 }
 
 export async function POST(request: Request) {
@@ -40,10 +41,15 @@ export async function POST(request: Request) {
     draftReport: body.draftReport
   };
 
-  const supervisorResult = await runSupervisor(initialSupervisorState, {
-    maxIterations,
-    maxConcurrentResearchers
-  }, stats);
+  const supervisorResult = await runSupervisor(
+    initialSupervisorState,
+    {
+      maxIterations,
+      maxConcurrentResearchers,
+      enableWebScraping: body.enableWebScraping ?? true
+    },
+    stats
+  );
 
   return Response.json({
     notes: supervisorResult.notes,

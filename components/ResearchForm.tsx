@@ -5,9 +5,11 @@ interface ResearchFormProps {
   onPromptChange: (value: string) => void;
   maxIterations: number;
   maxConcurrentResearchers: number;
+  enableWebScraping: boolean;
   onSettingsChange: (settings: {
     maxIterations: number;
     maxConcurrentResearchers: number;
+    enableWebScraping: boolean;
   }) => void;
   onSubmit: () => void;
   loading: boolean;
@@ -18,6 +20,7 @@ export default function ResearchForm({
   onPromptChange,
   maxIterations,
   maxConcurrentResearchers,
+  enableWebScraping,
   onSettingsChange,
   onSubmit,
   loading
@@ -43,7 +46,8 @@ export default function ResearchForm({
             onChange={(event) =>
               onSettingsChange({
                 maxIterations: Number(event.target.value),
-                maxConcurrentResearchers
+                maxConcurrentResearchers,
+                enableWebScraping
               })
             }
             style={{ marginLeft: 8, width: 80 }}
@@ -59,11 +63,26 @@ export default function ResearchForm({
             onChange={(event) =>
               onSettingsChange({
                 maxIterations,
-                maxConcurrentResearchers: Number(event.target.value)
+                maxConcurrentResearchers: Number(event.target.value),
+                enableWebScraping
               })
             }
             style={{ marginLeft: 8, width: 80 }}
           />
+        </label>
+        <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <input
+            type="checkbox"
+            checked={enableWebScraping}
+            onChange={(event) =>
+              onSettingsChange({
+                maxIterations,
+                maxConcurrentResearchers,
+                enableWebScraping: event.target.checked
+              })
+            }
+          />
+          Enable web scraping
         </label>
         <button
           onClick={onSubmit}

@@ -4,6 +4,7 @@ import { ResearchStats } from "../venice/stats";
 import { leadResearcherPrompt, reportGenerationWithDraftInsightPrompt } from "../prompts";
 import { DEFAULT_MODEL } from "./config";
 import { formatPrompt, getTodayStr } from "./utils";
+import { ProgressCallback } from "./progress";
 import {
   parseToolCalls,
   ResearcherResult,
@@ -15,6 +16,7 @@ import { runResearcher } from "./researcher";
 export interface SupervisorConfig {
   maxIterations: number;
   maxConcurrentResearchers: number;
+  enableWebScraping?: boolean;
   model?: string;
 }
 
@@ -82,7 +84,8 @@ const supervisorTools = [
 export async function runSupervisor(
   state: SupervisorState,
   config: SupervisorConfig,
-  stats?: ResearchStats
+  stats?: ResearchStats,
+  onProgress?: ProgressCallback
 ): Promise<SupervisorResult> {
   const model = config.model ?? DEFAULT_MODEL;
 
@@ -134,6 +137,7 @@ export async function runSupervisor(
       (call) => call.name === "ConductResearch"
     );
     if (conductCalls.length > 0) {
+      const totalTopics = conductCalls.length;
       for (
         let index = 0;
         index < conductCalls.length;
@@ -144,8 +148,16 @@ export async function runSupervisor(
           index + config.maxConcurrentResearchers
         );
 
+        onProgress?.({
+          type: "substep",
+          step: "research",
+          message: `Spinning up ${batch.length} researcher agent${
+            batch.length === 1 ? "" : "s"
+          }`
+        });
+
         const researchResults = await Promise.all(
-          batch.map(async (call) => {
+          batch.map(async (call, batchIndex) => {
             const researchTopic = String(call.arguments.research_topic ?? "");
             if (!researchTopic) {
               return {
@@ -158,8 +170,29 @@ export async function runSupervisor(
               };
             }
 
+            const topicIndex = index + batchIndex + 1;
             topics = [...topics, researchTopic];
-            const result = await runResearcher(researchTopic, model, stats);
+            onProgress?.({
+              type: "topic_start",
+              topic: researchTopic,
+              topicIndex,
+              totalTopics
+            });
+
+            const result = await runResearcher(
+              researchTopic,
+              model,
+              stats,
+              onProgress,
+              config.enableWebScraping
+            );
+
+            onProgress?.({
+              type: "topic_complete",
+              topic: researchTopic,
+              searchCount: result.searchCount
+            });
+
             return { call, result };
           })
         );

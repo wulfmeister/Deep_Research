@@ -278,7 +278,7 @@ Only these fully comprehensive cleaned findings are going to be returned to the 
 
 <Tool Call Filtering>
 **IMPORTANT**: When processing the research messages, focus only on substantive research content:
-- **Include**: All tavily_search results and findings from web searches
+- **Include**: All web_search results and findings from web searches
 - **Exclude**: think_tool calls and responses - these are internal agent reflections for decision-making and should not be included in the final research report
 - **Focus on**: Actual information gathered from external sources, not the agent's internal reasoning process
 

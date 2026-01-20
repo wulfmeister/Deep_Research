@@ -10,6 +10,11 @@
 - UI is minimal: `app/page.tsx` renders the research flow.
 - API routes live under `app/api` and call Venice APIs.
 - Legacy Python reference code lives in `python_reference/`.
+- Benchmark reference lives in `deep_research_bench_reference/` (treat as read-only).
+
+## Reference-only directories
+- Do not edit `deep_research_bench_reference/` or `python_reference/` unless explicitly requested.
+- Make all benchmark-related automation changes under `benchmark-adapter/`.
 
 ## Environment
 - Requires Node.js and npm.
