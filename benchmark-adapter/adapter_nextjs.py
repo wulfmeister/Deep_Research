@@ -175,6 +175,8 @@ def main() -> None:
   parser.set_defaults(enable_web_scraping=True)
 
   parser.add_argument("--limit", type=int, default=0, help="Limit number of tasks (0 = all)")
+  parser.add_argument("--task-ids", type=str, default="",
+                      help="Comma-separated task IDs to run (e.g., '51,52,53')")
   parser.add_argument("--timeout", type=int, default=600)
   parser.add_argument("--stream-read-timeout", type=int, default=STREAM_READ_TIMEOUT,
                       help="Timeout for stream reads (seconds without data)")
@@ -233,13 +235,19 @@ def main() -> None:
   if args.limit and args.limit > 0:
     tasks = tasks[: args.limit]
 
+  # Filter by specific task IDs if provided
+  if args.task_ids:
+    task_id_set = set(int(x.strip()) for x in args.task_ids.split(",") if x.strip())
+    tasks = [t for t in tasks if t.get("id") in task_id_set]
+
   if args.verbose:
     print(
-      "Loaded {} tasks from {} (limit={}, resume={}, scraping={}, timeout={}s, "
+      "Loaded {} tasks from {} (limit={}, task_ids={}, resume={}, scraping={}, timeout={}s, "
       "streamReadTimeout={}s, maxIterations={}, maxConcurrentResearchers={}, retries={})".format(
         len(tasks),
         query_path,
         args.limit,
+        args.task_ids,
         args.resume,
         args.enable_web_scraping,
         args.timeout,

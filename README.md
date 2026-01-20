@@ -104,6 +104,7 @@ The adapter auto-loads `.env` or `.env.local` if present. Store `GEMINI_API_KEY`
 
 - `--race-only`: Skip FACT evaluation (no Jina/Gemini needed for FACT)
 - `--limit 5`: Run a small sample (first 5 tasks)
+- `--task-ids 51,52,53`: Run specific task IDs only
 - `--model-name <name>`: Output JSONL name under `deep_research_bench_reference/data/test_data/raw_data/`
 - `--base-url <url>`: Point at local or remote API
 

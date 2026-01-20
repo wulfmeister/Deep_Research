@@ -27,7 +27,7 @@ function checkAborted(signal?: AbortSignal): void {
   }
 }
 
-const HEARTBEAT_INTERVAL_MS = 15000; // 15 seconds
+const HEARTBEAT_INTERVAL_MS = 60000; // 60 seconds
 
 function createStreamHandler(
   send: (event: ProgressEvent) => void,
