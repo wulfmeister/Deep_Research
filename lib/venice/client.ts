@@ -4,7 +4,7 @@ import { recordUsage, ResearchStats } from "./stats";
 const VENICE_BASE_URL = "https://api.venice.ai/api/v1";
 const MAX_RETRIES = 3;
 const RETRY_BASE_DELAY_MS = 1000;
-const DEFAULT_TIMEOUT_MS = 300000; // 5 minutes for long research operations
+const DEFAULT_TIMEOUT_MS = 600000; // 10 minutes for long research operations
 
 export class TimeoutError extends Error {
   constructor(message: string = "Request timed out") {
