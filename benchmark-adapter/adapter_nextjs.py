@@ -201,6 +201,8 @@ def main() -> None:
   parser.add_argument("--retry-delay", type=int, default=5)
   parser.add_argument("--query-file", default="../deep_research_bench_reference/data/prompt_data/query.jsonl")
   parser.add_argument("--output-dir", default="../deep_research_bench_reference/data/test_data/raw_data")
+  parser.add_argument("--local-output-dir", default="tmp",
+                      help="Additional local output directory (relative to script) for easy viewing")
   parser.add_argument("--check-health", action="store_true", default=False,
                       help="Check API health before starting")
 
@@ -209,6 +211,11 @@ def main() -> None:
   query_path = Path(args.query_file)
   output_dir = Path(args.output_dir)
   output_path = output_dir / f"{args.model_name}.jsonl"
+
+  # Local output directory (relative to script location for easy viewing)
+  script_dir = Path(__file__).parent.parent  # Go up to repo root
+  local_output_dir = script_dir / args.local_output_dir
+  local_output_path = local_output_dir / f"{args.model_name}.jsonl"
 
   # Health check
   if args.check_health:
@@ -252,6 +259,7 @@ def main() -> None:
 
   if args.verbose:
     print("Output path: {}".format(output_path))
+    print("Local output path: {}".format(local_output_path))
     if output_path.exists():
       print("Found {} existing rows".format(len(existing_ids)))
 
@@ -264,6 +272,7 @@ def main() -> None:
     nonlocal rows
     if rows:
       append_jsonl(output_path, rows)
+      append_jsonl(local_output_path, rows)
       rows = []
 
   for task in tasks:
