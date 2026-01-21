@@ -10,3 +10,15 @@ node_modules
 coverage
 *.log
 tmp/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Benchmark outputs (keep reference data, ignore generated)
+deep_research_bench_reference/data/test_data/raw_data/nextjs-agent.jsonl
+deep_research_bench_reference/data/test_data/raw_data/failed_tasks.jsonl
+deep_research_bench_reference/data/test_data/cleaned_data/nextjs-agent.jsonl
+deep_research_bench_reference/results/
+deep_research_bench_reference/output.log
