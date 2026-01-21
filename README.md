@@ -84,29 +84,96 @@ This mirrors the Python reference implementation where each research topic trigg
 
 The benchmark reference repo lives in `deep_research_bench_reference/` (read-only). Use the adapter in `benchmark-adapter/` to generate benchmark outputs and optionally run RACE/FACT without modifying reference files.
 
-### Quick run
+### Quick start
 
 1. Start the app:
 
-```
+```bash
 npm run dev
 ```
 
-2. Run the adapter and benchmark:
+2. **Quick test (low settings, task 51)** - confirm everything works:
 
+```bash
+python3 benchmark-adapter/adapter_nextjs.py \
+    --base-url http://localhost:3000 \
+    --model-name nextjs-agent \
+    --query-file deep_research_bench_reference/data/prompt_data/query.jsonl \
+    --output-dir deep_research_bench_reference/data/test_data/raw_data \
+    --task-ids 51 \
+    --max-iterations 1 \
+    --max-concurrent-researchers 1 \
+    --stream-read-timeout 120 \
+    --verbose \
+    --stream-progress \
+    --check-health
 ```
-./benchmark-adapter/run_benchmark_adapter.sh --model-name nextjs-agent --base-url http://localhost:3000
+
+3. **Higher quality run (task 51)** - try for a better score:
+
+```bash
+python3 benchmark-adapter/adapter_nextjs.py \
+    --base-url http://localhost:3000 \
+    --model-name nextjs-agent \
+    --query-file deep_research_bench_reference/data/prompt_data/query.jsonl \
+    --output-dir deep_research_bench_reference/data/test_data/raw_data \
+    --task-ids 51 \
+    --max-iterations 10 \
+    --max-concurrent-researchers 3 \
+    --stream-read-timeout 180 \
+    --verbose \
+    --stream-progress \
+    --no-resume \
+    --check-health
 ```
+
+4. **Full benchmark (all 100 tasks)**:
+
+```bash
+python3 benchmark-adapter/adapter_nextjs.py \
+    --base-url http://localhost:3000 \
+    --model-name nextjs-agent \
+    --query-file deep_research_bench_reference/data/prompt_data/query.jsonl \
+    --output-dir deep_research_bench_reference/data/test_data/raw_data \
+    --max-iterations 15 \
+    --max-concurrent-researchers 3 \
+    --stream-read-timeout 180 \
+    --retries 3 \
+    --verbose \
+    --stream-progress \
+    --check-health
+```
+
+### Scoring with RACE
+
+After generating results, score them:
+
+```bash
+cd deep_research_bench_reference && python3 -u deepresearch_bench_race.py "nextjs-agent" \
+    --raw_data_dir data/test_data/raw_data \
+    --query_file data/prompt_data/query.jsonl \
+    --output_dir results/race/nextjs-agent \
+    --max_workers 1 \
+    --force
+```
+
+Results will be in `deep_research_bench_reference/results/race/nextjs-agent/race_result.txt`.
+
+Note: The scorer will show warnings like "No target article found for task prompt..." for any tasks you haven't run yet. This is expected - it only scores tasks that have results.
+
+### Adapter flags
+
+- `--task-ids 51,52,53`: Run specific task IDs only
+- `--limit 5`: Run first N tasks
+- `--max-iterations N`: Research depth (1=minimal, 15=thorough)
+- `--max-concurrent-researchers N`: Parallel research agents
+- `--stream-read-timeout N`: Seconds to wait for data before timeout
+- `--no-resume`: Start fresh, ignore previous results
+- `--retries N`: Retry failed tasks N times
+- `--model-name <name>`: Output filename
+- `--base-url <url>`: API endpoint
 
 The adapter auto-loads `.env` or `.env.local` if present. Store `GEMINI_API_KEY` and `JINA_API_KEY` there for FACT evaluation.
-
-### Flags
-
-- `--race-only`: Skip FACT evaluation (no Jina/Gemini needed for FACT)
-- `--limit 5`: Run a small sample (first 5 tasks)
-- `--task-ids 51,52,53`: Run specific task IDs only
-- `--model-name <name>`: Output JSONL name under `deep_research_bench_reference/data/test_data/raw_data/`
-- `--base-url <url>`: Point at local or remote API
 
 ## Notes
 - The UI is intentionally minimal (single prompt + report view).
