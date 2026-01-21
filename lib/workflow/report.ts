@@ -1,6 +1,7 @@
 import { createChatCompletion } from "../venice/client";
 import { ResearchStats } from "../venice/stats";
 import { finalReportGenerationPrompt } from "../prompts";
+import { finalReportGenerationPrompt as originalFinalReportGenerationPrompt } from "../prompts.original";
 import { DEFAULT_MODEL } from "./config";
 import { formatPrompt, getTodayStr } from "./utils";
 
@@ -9,15 +10,21 @@ export async function generateFinalReport({
   findings,
   draftReport,
   model = DEFAULT_MODEL,
-  stats
+  stats,
+  useOriginalPrompts = false
 }: {
   researchBrief: string;
   findings: string;
   draftReport: string;
   model?: string;
   stats?: ResearchStats;
+  useOriginalPrompts?: boolean;
 }) {
-  const prompt = formatPrompt(finalReportGenerationPrompt, {
+  const promptTemplate = useOriginalPrompts
+    ? originalFinalReportGenerationPrompt
+    : finalReportGenerationPrompt;
+
+  const prompt = formatPrompt(promptTemplate, {
     research_brief: researchBrief,
     findings,
     draft_report: draftReport,

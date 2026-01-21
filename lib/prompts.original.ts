@@ -350,120 +350,88 @@ Here is the draft report:
 {draft_report}
 </Draft Report>
 
-<Length and Depth Requirements>
-Your report MUST be comprehensive and detailed - aim for at least 8,000-10,000 words.
-The user expects a thorough, publication-quality research report comparable to professional analyst reports, Wikipedia articles, or academic reviews.
+Please create a detailed answer to the overall research brief that:
+1. Is well-organized with proper headings (# for title, ## for sections, ### for subsections)
+2. Includes specific facts and insights from the research
+3. References relevant sources using [Title](URL) format
+4. Provides a balanced, thorough analysis. Be as comprehensive as possible, and include all information that is relevant to the overall research question. People are using you for deep research and will expect detailed, comprehensive answers.
+5. Includes a "Sources" section at the end with all referenced links
 
-Each major section (after the executive summary) should be 1,500-2,000 words minimum with:
-- Multiple subsections (use ### for subsection headers)
-- At least one data table per major section presenting quantitative comparisons
-- Specific statistics, figures, and citations throughout
-- Analysis of implications and significance, not just facts
-- Connections to broader context and trends
-</Length and Depth Requirements>
+You can structure your report in a number of different ways. Here are some examples:
 
-<Structure Requirements>
-Structure your report with formal numbered sections using this format:
+To answer a question that asks you to compare two things, you might structure your report like this:
+1/ intro
+2/ overview of topic A
+3/ overview of topic B
+4/ comparison between A and B
+5/ conclusion
 
-# [Report Title]
+To answer a question that asks you to return a list of things, you might only need a single section which is the entire list.
+1/ list of things or table of things
+Or, you could choose to make each item in the list a separate section in the report. When asked for lists, you don't need an introduction or conclusion.
+1/ item 1
+2/ item 2
+3/ item 3
 
-## I. Executive Summary
-A concise overview (300-500 words) of key findings, conclusions, and recommendations.
+To answer a question that asks you to summarize a topic, give a report, or give an overview, you might structure your report like this:
+1/ overview of topic
+2/ concept 1
+3/ concept 2
+4/ concept 3
+5/ conclusion
 
-## II. [First Major Topic - Background/Context]
-Provide comprehensive background, historical context, and foundational concepts.
+If you think you can answer the question with a single section, you can do that too!
+1/ answer
 
-## III. [Second Major Topic - Core Analysis]
-Deep dive into the main subject matter with detailed analysis.
+REMEMBER: Section is a VERY fluid and loose concept. You can structure your report however you think is best, including in ways that are not listed above!
+Make sure that your sections are cohesive, and make sense for the reader.
 
-## IV. [Third Major Topic - Comparative Analysis or Key Factors]
-Compare different perspectives, options, approaches, or analyze key contributing factors.
-
-## V. [Fourth Major Topic - Implications and Impacts]
-Analyze consequences, effects, and significance of the findings.
-
-## VI. [Fifth Major Topic - Future Outlook and Trends]
-Project trends forward, identify key uncertainties, and discuss emerging developments.
-
-## VII. Strategic Implications and Recommendations
-Provide actionable insights, recommendations, and conclusions.
-
-### Sources
-</Structure Requirements>
-
-<Table Requirements>
-Include data tables in EVERY major section (II through VII). Tables should:
-- Present quantitative data with specific numbers, percentages, dates, or metrics
-- Compare multiple items, perspectives, options, or timeframes
-- Use proper markdown table format with headers and alignment
-- Include source citations within or below tables
-- Be substantive (aim for 10+ rows where data permits)
-
-Example table format:
-| Category | Metric A | Metric B | Metric C | Notes |
-|----------|----------|----------|----------|-------|
-| Item 1   | Value    | Value    | Value    | Context |
-| Item 2   | Value    | Value    | Value    | Context |
-
-Types of tables to include:
-- Comparison tables (features, options, approaches)
-- Timeline tables (historical developments, milestones)
-- Data summary tables (statistics, metrics, figures)
-- Factor analysis tables (causes, effects, relationships)
-- Recommendation matrices (options, pros/cons, ratings)
-</Table Requirements>
-
-<Content Quality Rules>
-For each section of the report:
-- Write in paragraph form with explicit, detailed discussion in clear language
-- DO NOT oversimplify - clarify ambiguous concepts and provide nuance
-- Include specific data points, statistics, and quantitative information
-- Provide concrete examples and case studies where relevant
-- Apply theoretical frameworks with detailed explanation when applicable
-- Connect findings to broader implications and context
-- Use ## for main section titles and ### for subsections
-- Do NOT refer to yourself or use self-referential language
-- Do not describe what you are doing - just present the content directly
+For each section of the report, do the following:
+- Have an explicit discussion in simple, clear language.
+- DO NOT oversimplify. Clarify when a concept is ambiguous.
+- DO NOT list facts in bullet points. write in paragraph form.
+- If there are theoretical frameworks, provide a detailed application of theoretical frameworks.
+- For comparison and conclusion, include a summary table.
+- Use ## for section title (Markdown format) for each section of the report
+- Do NOT ever refer to yourself as the writer of the report. This should be a professional report without any self-referential language. 
+- Do not say what you are doing in the report. Just write the report without any commentary from yourself.
+- Each section should be as long as necessary to deeply answer the question with the information you have gathered. It is expected that sections will be fairly long and verbose. You are writing a deep research report, and users will expect a thorough answer and provide insights by following the Insightfulness Rules.
 
 <Insightfulness Rules>
-- Granular breakdown: Provide detailed breakdown of topics with specific causes and specific impacts
-- Detailed mapping tables: Include comprehensive tables mapping relationships, causes/effects, comparisons
-- Nuanced discussion: Offer detailed exploration with explicit discussion of complexities and trade-offs
-- Quantitative depth: Include specific numbers, percentages, dates, and measurable data points
-- Contextual analysis: Connect specific findings to broader trends, historical patterns, and future implications
+- Granular breakdown - Does the response have a granular breakdown of the topics and their specific causes and specific impacts?
+- Detailed mapping table - Does the response have a detailed table mapping these causes and effects?
+- Nuanced discussion - Does the response have detailed exploration of the topic and explicit discussion?
 </Insightfulness Rules>
 
-<Helpfulness Rules>
-- Satisfying user intent: Directly and thoroughly address the research question
-- Ease of understanding: Present information in a fluent, coherent, and logically structured manner
-- Accuracy: Ensure all facts, reasoning, and explanations are correct and well-sourced
-- Appropriate language: Maintain professional tone without unnecessary jargon
-- Actionable insights: Provide practical takeaways and recommendations where appropriate
-</Helpfulness Rules>
-</Content Quality Rules>
+- Each section should follow the Helpfulness Rules.
 
-<Citation Rules>
-- Assign each unique URL a single citation number in your text [1], [2], etc.
-- Cite sources immediately after claims or data points
-- End with ### Sources that lists each source with corresponding numbers
-- Include the URL in ### Sources section only. Use the citation number in the other sections.
-- IMPORTANT: Number sources sequentially without gaps (1,2,3,4...) in the final list
-- Each source should be a separate line item in a list
-- Aim for 20+ unique sources to ensure comprehensive coverage
-- Example format:
-  [1] Source Title: URL
-  [2] Source Title: URL
-- Citations are extremely important. Users rely on these to verify information and explore further.
-</Citation Rules>
+<Helpfulness Rules>
+- Satisfying user intent – Does the response directly address the user’s request or question?
+- Ease of understanding – Is the response fluent, coherent, and logically structured?
+- Accuracy – Are the facts, reasoning, and explanations correct?
+- Appropriate language – Is the tone suitable and professional, without unnecessary jargon or confusing phrasing?
+</Helpfulness Rules>
 
 REMEMBER:
 The brief and research may be in English, but you need to translate this information to the right language when writing the final answer.
 Make sure the final answer report is in the SAME language as the human messages in the message history.
 
-Format the report in clear markdown with proper structure and include source references throughout.
+Format the report in clear markdown with proper structure and include source references where appropriate.
+
+<Citation Rules>
+- Assign each unique URL a single citation number in your text
+- End with ### Sources that lists each source with corresponding numbers
+- Include the URL in ### Sources section only. Use the citation number in the other sections.
+- IMPORTANT: Number sources sequentially without gaps (1,2,3,4...) in the final list regardless of which sources you choose
+- Each source should be a separate line item in a list, so that in markdown it is rendered as a list.
+- Example format:
+  [1] Source Title: URL
+  [2] Source Title: URL
+- Citations are extremely important. Make sure to include these, and pay a lot of attention to getting these right. Users will often use these citations to look into more information.
+</Citation Rules>
 `;
 
-export const reportGenerationWithDraftInsightPrompt = `Based on all the research conducted and draft report, create an EXPANDED and MORE COMPREHENSIVE version of the draft report:
+export const reportGenerationWithDraftInsightPrompt = `Based on all the research conducted and draft report, create a comprehensive, well-structured answer to the overall research brief:
 <Research Brief>
 {research_brief}
 </Research Brief>
@@ -479,88 +447,75 @@ Here is the draft report:
 {draft_report}
 </Draft Report>
 
-Here are the NEW findings from additional research:
+Here are the findings from the research that you conducted:
 <Findings>
 {findings}
 </Findings>
 
-<Expansion Requirements - CRITICAL>
-Your PRIMARY goal is to EXPAND and ADD CONTENT to the draft report, NOT just polish it.
+Please create a detailed answer to the overall research brief that:
+1. Is well-organized with proper headings (# for title, ## for sections, ### for subsections)
+2. Includes specific facts and insights from the research
+3. References relevant sources using [Title](URL) format
+4. Provides a balanced, thorough analysis. Be as comprehensive as possible, and include all information that is relevant to the overall research question. People are using you for deep research and will expect detailed, comprehensive answers.
+5. Includes a "Sources" section at the end with all referenced links
 
-The refined report MUST be LONGER than the draft report. You should:
-1. ADD new sections covering topics from the new findings not in the draft
-2. EXPAND existing sections with additional details, statistics, and examples from new findings
-3. ADD new data tables that weren't in the draft (aim for at least one table per major section)
-4. INCORPORATE all new sources and citations from the findings
-5. DEEPEN the analysis with more specific data points and quantitative information
+You can structure your report in a number of different ways. Here are some examples:
 
-DO NOT:
-- Merely rephrase or reorganize the draft without adding substance
-- Remove content from the draft unless it's factually incorrect
-- Summarize or condense sections
-- Skip adding information just because the draft "covers the topic"
+To answer a question that asks you to compare two things, you might structure your report like this:
+1/ intro
+2/ overview of topic A
+3/ overview of topic B
+4/ comparison between A and B
+5/ conclusion
 
-For each piece of new information in the findings:
-- Identify WHERE it should be integrated into the report
-- ADD it with full detail, not just a brief mention
-- Include the source citation
-</Expansion Requirements - CRITICAL>
+To answer a question that asks you to return a list of things, you might only need a single section which is the entire list.
+1/ list of things or table of things
+Or, you could choose to make each item in the list a separate section in the report. When asked for lists, you don't need an introduction or conclusion.
+1/ item 1
+2/ item 2
+3/ item 3
 
-<Structure Requirements>
-Use formal numbered sections:
-## I. Executive Summary
-## II. [Background/Context]
-## III. [Core Analysis]
-## IV. [Comparative Analysis or Key Factors]
-## V. [Implications and Impacts]
-## VI. [Future Outlook]
-## VII. Strategic Implications and Recommendations
-### Sources
+To answer a question that asks you to summarize a topic, give a report, or give an overview, you might structure your report like this:
+1/ overview of topic
+2/ concept 1
+3/ concept 2
+4/ concept 3
+5/ conclusion
 
-Each section should include:
-- Multiple subsections (### headers) with detailed discussion
-- At least one data table with quantitative comparisons
-- Specific statistics and figures with citations
-- Analysis of implications, not just facts
-</Structure Requirements>
+If you think you can answer the question with a single section, you can do that too!
+1/ answer
 
-<Table Requirements>
-Include data tables in EVERY major section. Tables should:
-- Present quantitative data with specific numbers
-- Compare multiple items, perspectives, or timeframes
-- Use markdown table format with headers
-- Include source citations
+REMEMBER: Section is a VERY fluid and loose concept. You can structure your report however you think is best, including in ways that are not listed above!
+Make sure that your sections are cohesive, and make sense for the reader.
 
-If the draft lacks tables, ADD them using data from the findings.
-</Table Requirements>
+For each section of the report, do the following:
+- Use simple, clear language
+- Keep important details from the research findings
+- Use ## for section title (Markdown format) for each section of the report
+- Do NOT ever refer to yourself as the writer of the report. This should be a professional report without any self-referential language. 
+- Do not say what you are doing in the report. Just write the report without any commentary from yourself.
+- Each section should be as long as necessary to deeply answer the question with the information you have gathered. It is expected that sections will be fairly long and verbose. You are writing a deep research report, and users will expect a thorough answer.
+- Use bullet points to list out information when appropriate, but by default, write in paragraph form.
 
-<Content Quality Rules>
-For each section:
-- Write in detailed paragraph form with explicit discussion
-- Include specific data points, statistics, and quantitative information
-- Provide concrete examples and case studies
-- Connect findings to broader implications
-- Use ## for main sections, ### for subsections
-- Do NOT refer to yourself or use self-referential language
-</Content Quality Rules>
+REMEMBER:
+The brief and research may be in English, but you need to translate this information to the right language when writing the final answer.
+Make sure the final answer report is in the SAME language as the human messages in the message history.
+
+Format the report in clear markdown with proper structure and include source references where appropriate.
 
 <Citation Rules>
-- Assign each unique URL a single citation number [1], [2], etc.
-- Cite sources immediately after claims or data
-- End with ### Sources listing all sources with numbers
-- Number sources sequentially without gaps
+- Assign each unique URL a single citation number in your text
+- End with ### Sources that lists each source with corresponding numbers
+- IMPORTANT: Number sources sequentially without gaps (1,2,3,4...) in the final list regardless of which sources you choose
+- Each source should be a separate line item in a list, so that in markdown it is rendered as a list.
 - Example format:
   [1] Source Title: URL
   [2] Source Title: URL
-- Include ALL sources from both the draft and new findings
+- Citations are extremely important. Make sure to include these, and pay a lot of attention to getting these right. Users will often use these citations to look into more information.
 </Citation Rules>
-
-REMEMBER:
-Make sure the final report is in the SAME language as the human messages.
-The refined report should be SIGNIFICANTLY longer and more detailed than the draft.
 `;
 
-export const draftReportGenerationPrompt = `Based on all the research in your knowledge base, create a comprehensive, well-structured draft report for the research brief:
+export const draftReportGenerationPrompt = `Based on all the research in your knowledge base, create a comprehensive, well-structured answer to the overall research brief:
 <Research Brief>
 {research_brief}
 </Research Brief>
@@ -571,71 +526,64 @@ This is critical. The user will only understand the answer if it is written in t
 
 Today's date is {date}.
 
-<Draft Purpose>
-This is an INITIAL DRAFT that will be expanded through additional research iterations.
-Create a solid foundation with comprehensive structure that can be built upon.
-Aim for 3,000-5,000 words minimum in this draft - it will be expanded further.
-</Draft Purpose>
+Please create a detailed answer to the overall research brief that:
+1. Is well-organized with proper headings (# for title, ## for sections, ### for subsections)
+2. Includes specific facts and insights from the research
+3. References relevant sources using [Title](URL) format
+4. Provides a balanced, thorough analysis. Be as comprehensive as possible, and include all information that is relevant to the overall research question. People are using you for deep research and will expect detailed, comprehensive answers.
+5. Includes a "Sources" section at the end with all referenced links
 
-<Structure Requirements>
-Use formal numbered sections:
+You can structure your report in a number of different ways. Here are some examples:
 
-# [Report Title]
+To answer a question that asks you to compare two things, you might structure your report like this:
+1/ intro
+2/ overview of topic A
+3/ overview of topic B
+4/ comparison between A and B
+5/ conclusion
 
-## I. Executive Summary
-A concise overview (200-300 words) of the topic and key areas to be covered.
+To answer a question that asks you to return a list of things, you might only need a single section which is the entire list.
+1/ list of things or table of things
+Or, you could choose to make each item in the list a separate section in the report. When asked for lists, you don't need an introduction or conclusion.
+1/ item 1
+2/ item 2
+3/ item 3
 
-## II. [Background and Context]
-Foundational information, historical context, and key concepts.
+To answer a question that asks you to summarize a topic, give a report, or give an overview, you might structure your report like this:
+1/ overview of topic
+2/ concept 1
+3/ concept 2
+4/ concept 3
+5/ conclusion
 
-## III. [Core Analysis]
-Main subject matter analysis with available data and insights.
+If you think you can answer the question with a single section, you can do that too!
+1/ answer
 
-## IV. [Comparative Analysis or Key Factors]
-Different perspectives, options, or contributing factors.
+REMEMBER: Section is a VERY fluid and loose concept. You can structure your report however you think is best, including in ways that are not listed above!
+Make sure that your sections are cohesive, and make sense for the reader.
 
-## V. [Implications and Impacts]
-Consequences, effects, and significance.
+For each section of the report, do the following:
+- Use simple, clear language
+- Use ## for section title (Markdown format) for each section of the report
+- Do NOT ever refer to yourself as the writer of the report. This should be a professional report without any self-referential language. 
+- Do not say what you are doing in the report. Just write the report without any commentary from yourself.
+- Each section should be as long as necessary to deeply answer the question with the information you have gathered. It is expected that sections will be fairly long and verbose. You are writing a deep research report, and users will expect a thorough answer.
+- Use bullet points to list out information when appropriate, but by default, write in paragraph form.
 
-## VI. [Future Outlook]
-Trends, projections, and emerging developments.
+REMEMBER:
+The brief and research may be in English, but you need to translate this information to the right language when writing the final answer.
+Make sure the final answer report is in the SAME language as the human messages in the message history.
 
-## VII. Conclusions and Recommendations
-Summary and actionable insights.
-
-### Sources
-</Structure Requirements>
-
-<Table Requirements>
-Include data tables where appropriate. Even in a draft:
-- Add comparison tables for features, options, or approaches
-- Include timeline tables for developments or milestones
-- Create summary tables for key metrics or statistics
-- Use markdown table format with headers
-
-Tables provide structure that will be filled in with more data during research iterations.
-</Table Requirements>
-
-<Content Quality Rules>
-For each section:
-- Write in paragraph form with clear, detailed discussion
-- Include specific data points and statistics where known
-- Leave clear markers for areas that need more research
-- Use ## for main section titles, ### for subsections
-- Do NOT refer to yourself or use self-referential language
-- Each section should be substantial (300-800 words minimum)
-</Content Quality Rules>
+Format the report in clear markdown with proper structure and include source references where appropriate.
 
 <Citation Rules>
-- Assign each unique URL a single citation number [1], [2], etc.
-- End with ### Sources listing sources with numbers
-- Number sources sequentially without gaps
+- Assign each unique URL a single citation number in your text
+- End with ### Sources that lists each source with corresponding numbers
+- IMPORTANT: Number sources sequentially without gaps (1,2,3,4...) in the final list regardless of which sources you choose
+- Each source should be a separate line item in a list, so that in markdown it is rendered as a list.
 - Example format:
   [1] Source Title: URL
   [2] Source Title: URL
+- Citations are extremely important. Make sure to include these, and pay a lot of attention to getting these right. Users will often use these citations to look into more information.
 </Citation Rules>
-
-REMEMBER:
-Make sure the draft is in the SAME language as the human messages.
-This draft sets the structure for a comprehensive final report - make it thorough.
 `;

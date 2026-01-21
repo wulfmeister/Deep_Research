@@ -207,6 +207,8 @@ def main() -> None:
                       help="Additional local output directory (relative to script) for easy viewing")
   parser.add_argument("--check-health", action="store_true", default=False,
                       help="Check API health before starting")
+  parser.add_argument("--original-prompts", action="store_true", default=False,
+                      help="Use original prompts instead of optimized ones")
 
   args = parser.parse_args()
 
@@ -243,7 +245,8 @@ def main() -> None:
   if args.verbose:
     print(
       "Loaded {} tasks from {} (limit={}, task_ids={}, resume={}, scraping={}, timeout={}s, "
-      "streamReadTimeout={}s, maxIterations={}, maxConcurrentResearchers={}, retries={})".format(
+      "streamReadTimeout={}s, maxIterations={}, maxConcurrentResearchers={}, retries={}, "
+      "originalPrompts={})".format(
         len(tasks),
         query_path,
         args.limit,
@@ -255,6 +258,7 @@ def main() -> None:
         args.max_iterations,
         args.max_concurrent_researchers,
         args.retries,
+        args.original_prompts,
       )
     )
 
@@ -297,7 +301,8 @@ def main() -> None:
       "prompt": prompt,
       "maxIterations": args.max_iterations,
       "maxConcurrentResearchers": args.max_concurrent_researchers,
-      "enableWebScraping": args.enable_web_scraping
+      "enableWebScraping": args.enable_web_scraping,
+      "useOriginalPrompts": args.original_prompts
     }
 
     if args.verbose:

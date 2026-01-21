@@ -38,7 +38,8 @@ function createStreamHandler(
     prompt: string,
     maxIterations: number,
     maxConcurrentResearchers: number,
-    enableWebScraping: boolean
+    enableWebScraping: boolean,
+    useOriginalPrompts: boolean
   ) => {
     const stats = createResearchStats();
 
@@ -82,7 +83,7 @@ function createStreamHandler(
       });
 
       checkAborted(abortSignal);
-      const draftReport = await writeDraftReport(researchBrief, undefined, stats);
+      const draftReport = await writeDraftReport(researchBrief, undefined, stats, useOriginalPrompts);
 
       checkAborted(abortSignal);
       send({ type: "step_complete", step: "draft" });
@@ -112,7 +113,7 @@ function createStreamHandler(
       checkAborted(abortSignal);
       const supervisorResult = await runSupervisor(
         supervisorState,
-        { maxIterations, maxConcurrentResearchers, enableWebScraping },
+        { maxIterations, maxConcurrentResearchers, enableWebScraping, useOriginalPrompts },
         stats,
         onProgress
       );
@@ -130,7 +131,8 @@ function createStreamHandler(
         researchBrief,
         findings: supervisorResult.notes.join("\n"),
         draftReport: supervisorResult.draftReport,
-        stats
+        stats,
+        useOriginalPrompts
       });
 
       checkAborted(abortSignal);
@@ -166,6 +168,7 @@ function createStreamResponse(
   maxIterations: number,
   maxConcurrentResearchers: number,
   enableWebScraping: boolean,
+  useOriginalPrompts: boolean,
   requestSignal?: AbortSignal
 ) {
   const abortController = new AbortController();
@@ -187,7 +190,7 @@ function createStreamResponse(
       };
 
       const handler = createStreamHandler(send, controller, abortController.signal);
-      void handler(prompt, maxIterations, maxConcurrentResearchers, enableWebScraping);
+      void handler(prompt, maxIterations, maxConcurrentResearchers, enableWebScraping, useOriginalPrompts);
     },
     cancel() {
       abortController.abort();
@@ -220,12 +223,14 @@ export async function GET(request: Request) {
     5
   );
   const enableWebScraping = searchParams.get("enableWebScraping") !== "false";
+  const useOriginalPrompts = searchParams.get("useOriginalPrompts") === "true";
 
   return createStreamResponse(
     prompt,
     maxIterations,
     maxConcurrentResearchers,
     enableWebScraping,
+    useOriginalPrompts,
     request.signal
   );
 }
@@ -236,6 +241,7 @@ export async function POST(request: Request) {
     maxIterations?: number;
     maxConcurrentResearchers?: number;
     enableWebScraping?: boolean;
+    useOriginalPrompts?: boolean;
   };
 
   try {
@@ -256,12 +262,14 @@ export async function POST(request: Request) {
     5
   );
   const enableWebScraping = payload.enableWebScraping !== false;
+  const useOriginalPrompts = payload.useOriginalPrompts ?? false;
 
   return createStreamResponse(
     prompt,
     maxIterations,
     maxConcurrentResearchers,
     enableWebScraping,
+    useOriginalPrompts,
     request.signal
   );
 }

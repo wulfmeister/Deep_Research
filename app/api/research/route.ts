@@ -12,6 +12,7 @@ interface ResearchRequest {
   maxIterations?: number;
   maxConcurrentResearchers?: number;
   enableWebScraping?: boolean;
+  useOriginalPrompts?: boolean;
 }
 
 export async function POST(request: Request) {
@@ -26,12 +27,13 @@ export async function POST(request: Request) {
     Math.max(body.maxConcurrentResearchers ?? 3, 1),
     5
   );
+  const useOriginalPrompts = body.useOriginalPrompts ?? false;
 
   const stats = createResearchStats();
   const messages: Message[] = [{ role: "user", content: body.prompt }];
 
   const researchBrief = await writeResearchBrief(messages, undefined, stats);
-  const draftReport = await writeDraftReport(researchBrief, undefined, stats);
+  const draftReport = await writeDraftReport(researchBrief, undefined, stats, useOriginalPrompts);
 
   const initialSupervisorState: SupervisorState = {
     supervisorMessages: [
@@ -56,7 +58,8 @@ export async function POST(request: Request) {
     {
       maxIterations,
       maxConcurrentResearchers,
-      enableWebScraping: body.enableWebScraping ?? true
+      enableWebScraping: body.enableWebScraping ?? true,
+      useOriginalPrompts
     },
     stats
   );
@@ -66,7 +69,8 @@ export async function POST(request: Request) {
     researchBrief,
     findings,
     draftReport: supervisorResult.draftReport ?? draftReport,
-    stats
+    stats,
+    useOriginalPrompts
   });
 
   return Response.json({

@@ -163,17 +163,42 @@ Note: The scorer will show warnings like "No target article found for task promp
 
 ### Adapter flags
 
-- `--task-ids 51,52,53`: Run specific task IDs only
-- `--limit 5`: Run first N tasks
-- `--max-iterations N`: Research depth (1=minimal, 15=thorough)
-- `--max-concurrent-researchers N`: Parallel research agents
-- `--stream-read-timeout N`: Seconds to wait for data before timeout
-- `--no-resume`: Start fresh, ignore previous results
-- `--retries N`: Retry failed tasks N times
-- `--model-name <name>`: Output filename
-- `--base-url <url>`: API endpoint
+| Flag | Description |
+|------|-------------|
+| `--task-ids 51,52,53` | Run specific task IDs only |
+| `--limit 5` | Run first N tasks |
+| `--max-iterations N` | Research depth (1=minimal, 15=thorough) |
+| `--max-concurrent-researchers N` | Parallel research agents |
+| `--stream-read-timeout N` | Seconds to wait for data before timeout |
+| `--no-resume` | Start fresh, ignore previous results |
+| `--retries N` | Retry failed tasks N times |
+| `--model-name <name>` | Output filename |
+| `--base-url <url>` | API endpoint |
+| `--original-prompts` | Use original prompts instead of optimized ones |
 
 The adapter auto-loads `.env` or `.env.local` if present. Store `GEMINI_API_KEY` and `JINA_API_KEY` there for FACT evaluation.
+
+### Prompt optimization
+
+The prompts have been optimized for longer, more comprehensive reports. Key improvements:
+
+- **Length requirements**: Final reports target 8,000-10,000 words (vs ~2,500 before)
+- **Formal structure**: Reports use numbered sections (I, II, III... VII)
+- **Table requirements**: Data tables required in every major section
+- **Section depth**: Each major section targets 1,500-2,000 words minimum
+- **Expansion focus**: Draft refinement emphasizes adding content, not just polishing
+
+To compare optimized vs original prompts:
+
+```bash
+# Run with optimized prompts (default)
+python3 benchmark-adapter/adapter_nextjs.py --task-ids 51 --verbose --stream-progress
+
+# Run with original prompts (baseline)
+python3 benchmark-adapter/adapter_nextjs.py --task-ids 51 --original-prompts --verbose --stream-progress
+```
+
+Original prompts are preserved in `lib/prompts.original.ts` for reference and A/B testing.
 
 ## Notes
 - The UI is intentionally minimal (single prompt + report view).

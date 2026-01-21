@@ -5,6 +5,9 @@ import {
   draftReportGenerationPrompt,
   transformMessagesIntoResearchTopicPrompt
 } from "../prompts";
+import {
+  draftReportGenerationPrompt as originalDraftReportGenerationPrompt
+} from "../prompts.original";
 import { DEFAULT_MODEL } from "./config";
 import { formatPrompt, getTodayStr } from "./utils";
 
@@ -55,9 +58,14 @@ export async function writeResearchBrief(
 export async function writeDraftReport(
   researchBrief: string,
   model = DEFAULT_MODEL,
-  stats?: ResearchStats
+  stats?: ResearchStats,
+  useOriginalPrompts = false
 ) {
-  const prompt = formatPrompt(draftReportGenerationPrompt, {
+  const promptTemplate = useOriginalPrompts
+    ? originalDraftReportGenerationPrompt
+    : draftReportGenerationPrompt;
+
+  const prompt = formatPrompt(promptTemplate, {
     research_brief: researchBrief,
     date: getTodayStr()
   });

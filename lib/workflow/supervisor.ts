@@ -2,6 +2,7 @@ import { createChatCompletion } from "../venice/client";
 import { Message } from "../venice/types";
 import { ResearchStats } from "../venice/stats";
 import { leadResearcherPrompt, reportGenerationWithDraftInsightPrompt } from "../prompts";
+import { reportGenerationWithDraftInsightPrompt as originalReportGenerationWithDraftInsightPrompt } from "../prompts.original";
 import { DEFAULT_MODEL } from "./config";
 import { formatPrompt, getTodayStr, estimateMessagesTokenCount } from "./utils";
 import { ProgressCallback } from "./progress";
@@ -21,6 +22,7 @@ export interface SupervisorConfig {
   maxConcurrentResearchers: number;
   enableWebScraping?: boolean;
   model?: string;
+  useOriginalPrompts?: boolean;
 }
 
 function truncateMessagesIfNeeded(messages: Message[]): Message[] {
@@ -266,7 +268,8 @@ export async function runSupervisor(
           researchBrief: state.researchBrief,
           findings,
           draftReport,
-          stats
+          stats,
+          useOriginalPrompts: config.useOriginalPrompts
         });
         draftReport = refined;
 
@@ -298,15 +301,21 @@ async function refineDraftReport({
   researchBrief,
   findings,
   draftReport,
-  stats
+  stats,
+  useOriginalPrompts = false
 }: {
   model: string;
   researchBrief: string;
   findings: string;
   draftReport: string;
   stats?: ResearchStats;
+  useOriginalPrompts?: boolean;
 }) {
-  const prompt = formatPrompt(reportGenerationWithDraftInsightPrompt, {
+  const promptTemplate = useOriginalPrompts
+    ? originalReportGenerationWithDraftInsightPrompt
+    : reportGenerationWithDraftInsightPrompt;
+
+  const prompt = formatPrompt(promptTemplate, {
     research_brief: researchBrief,
     findings,
     draft_report: draftReport,
