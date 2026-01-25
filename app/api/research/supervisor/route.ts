@@ -22,9 +22,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const maxIterations = Math.min(Math.max(body.maxIterations ?? 15, 1), 30);
+  const maxIterations = Math.min(Math.max(body.maxIterations ?? 2, 1), 10);
   const maxConcurrentResearchers = Math.min(
-    Math.max(body.maxConcurrentResearchers ?? 3, 1),
+    Math.max(body.maxConcurrentResearchers ?? 5, 1),
     5
   );
 

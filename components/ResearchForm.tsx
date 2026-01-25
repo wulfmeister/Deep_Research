@@ -47,7 +47,7 @@ export default function ResearchForm({
           <input
             type="number"
             min={1}
-            max={30}
+            max={10}
             value={maxIterations}
             onChange={(event) =>
               onSettingsChange({
@@ -61,7 +61,7 @@ export default function ResearchForm({
           <span className="settings-help">
             Supervisor cycles; higher means deeper research and more tool calls.
           </span>
-          <span className="settings-limit">Max 30</span>
+          <span className="settings-limit">Max 10</span>
         </label>
         <label className="settings-card">
           <span className="settings-label">Parallel researchers</span>

@@ -443,17 +443,25 @@ For each section of the report:
 </Content Quality Rules>
 
 <Citation Rules>
+CRITICAL: You MUST use real URLs from the research findings. DO NOT invent citations or use academic format (Author, Year, Journal).
+
+- ONLY cite sources that appear in the <Findings> section with actual URLs
 - Assign each unique URL a single citation number in your text [1], [2], etc.
 - Cite sources immediately after claims or data points
 - End with ### Sources that lists each source with corresponding numbers
-- Include the URL in ### Sources section only. Use the citation number in the other sections.
-- IMPORTANT: Number sources sequentially without gaps (1,2,3,4...) in the final list
-- Each source should be a separate line item in a list
-- Aim for 20+ unique sources to ensure comprehensive coverage
-- Example format:
-  [1] Source Title: URL
-  [2] Source Title: URL
-- Citations are extremely important. Users rely on these to verify information and explore further.
+- Include the full URL in ### Sources section. Use the citation number in other sections.
+- IMPORTANT: Number sources sequentially without gaps (1,2,3,4...)
+- Each source should be a separate line item
+
+CORRECT format (use this):
+  [1] Article Title: https://example.com/actual-url
+  [2] Another Source: https://real-website.com/page
+
+WRONG format (never do this):
+  [1] Smith, J. (2023). Some Paper. Journal Name, 12(3), 45-67.
+  [2] Author (Year). Academic Citation Format.
+
+The findings contain real URLs from web searches - USE THEM. Do not hallucinate sources.
 </Citation Rules>
 
 REMEMBER:
@@ -545,14 +553,20 @@ For each section:
 </Content Quality Rules>
 
 <Citation Rules>
+CRITICAL: Use ONLY real URLs from the findings. DO NOT invent citations or use academic format.
+
+- ONLY cite sources with actual URLs from the <Findings> or <Draft Report>
 - Assign each unique URL a single citation number [1], [2], etc.
-- Cite sources immediately after claims or data
-- End with ### Sources listing all sources with numbers
+- End with ### Sources listing all sources with numbers and full URLs
 - Number sources sequentially without gaps
-- Example format:
-  [1] Source Title: URL
-  [2] Source Title: URL
-- Include ALL sources from both the draft and new findings
+
+CORRECT format:
+  [1] Article Title: https://example.com/actual-url
+
+WRONG format (never use):
+  [1] Author (Year). Paper Title. Journal.
+
+Use the real URLs from the research - do not hallucinate sources.
 </Citation Rules>
 
 REMEMBER:
@@ -627,12 +641,13 @@ For each section:
 </Content Quality Rules>
 
 <Citation Rules>
-- Assign each unique URL a single citation number [1], [2], etc.
-- End with ### Sources listing sources with numbers
+- If you have URLs from prior knowledge, cite them with [1], [2], etc.
+- End with ### Sources listing sources with numbers and full URLs
 - Number sources sequentially without gaps
+- IMPORTANT: Only cite real URLs, not academic format (Author, Year, Journal)
 - Example format:
-  [1] Source Title: URL
-  [2] Source Title: URL
+  [1] Source Title: https://example.com/url
+  [2] Another Source: https://website.com/page
 </Citation Rules>
 
 REMEMBER:

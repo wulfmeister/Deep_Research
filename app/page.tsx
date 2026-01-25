@@ -33,8 +33,8 @@ export default function HomePage() {
   const [prompt, setPrompt] = useState("");
   const [report, setReport] = useState("");
   const [loading, setLoading] = useState(false);
-  const [maxIterations, setMaxIterations] = useState(5);
-  const [maxConcurrentResearchers, setMaxConcurrentResearchers] = useState(3);
+  const [maxIterations, setMaxIterations] = useState(2);
+  const [maxConcurrentResearchers, setMaxConcurrentResearchers] = useState(5);
   const [enableWebScraping, setEnableWebScraping] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [error, setError] = useState<string | null>(null);

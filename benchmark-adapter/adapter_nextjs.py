@@ -155,8 +155,8 @@ def main() -> None:
   parser = argparse.ArgumentParser(description="Run DeepResearch Bench against Next.js API")
   parser.add_argument("--base-url", default="http://localhost:3000", help="Next.js base URL")
   parser.add_argument("--model-name", default="nextjs-agent", help="Output model name")
-  parser.add_argument("--max-iterations", type=int, default=15)
-  parser.add_argument("--max-concurrent-researchers", type=int, default=3)
+  parser.add_argument("--max-iterations", type=int, default=2)
+  parser.add_argument("--max-concurrent-researchers", type=int, default=5)
 
   # Mutually exclusive web scraping flags
   scraping_group = parser.add_mutually_exclusive_group()

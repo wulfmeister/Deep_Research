@@ -215,11 +215,11 @@ export async function GET(request: Request) {
   }
 
   const maxIterations = Math.min(
-    Math.max(Number(searchParams.get("maxIterations") ?? 15), 1),
-    30
+    Math.max(Number(searchParams.get("maxIterations") ?? 2), 1),
+    10
   );
   const maxConcurrentResearchers = Math.min(
-    Math.max(Number(searchParams.get("maxConcurrentResearchers") ?? 3), 1),
+    Math.max(Number(searchParams.get("maxConcurrentResearchers") ?? 5), 1),
     5
   );
   const enableWebScraping = searchParams.get("enableWebScraping") !== "false";
@@ -256,9 +256,9 @@ export async function POST(request: Request) {
     return Response.json({ error: "Missing prompt" }, { status: 400 });
   }
 
-  const maxIterations = Math.min(Math.max(payload.maxIterations ?? 15, 1), 30);
+  const maxIterations = Math.min(Math.max(payload.maxIterations ?? 2, 1), 10);
   const maxConcurrentResearchers = Math.min(
-    Math.max(payload.maxConcurrentResearchers ?? 3, 1),
+    Math.max(payload.maxConcurrentResearchers ?? 5, 1),
     5
   );
   const enableWebScraping = payload.enableWebScraping !== false;

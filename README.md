@@ -17,6 +17,8 @@ Original Python benchmark code is preserved under `deep_research_bench_reference
 
 Technically works with Vercel, but will timeout on the ~13 minute maximum streaming limit. Deploy to Railway for now.
 
+> **CAVEAT:** I have no idea what I am doing, please send help.
+
 ## Next goals
 
 - Benchmarking on deep_research_bench at https://github.com/Ayanami0730/deep_research_bench
