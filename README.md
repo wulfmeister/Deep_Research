@@ -1,8 +1,23 @@
 # Deep Research (Venice + Next.js)
+# OpenDeepResesarch
+
+[![Venice](https://img.shields.io/badge/Venice-API-7b1d1d)](https://venice.ai)
+[![Brave Search](https://img.shields.io/badge/Brave-Search-fc4c02)](https://brave.com/search/)
+[![Vercel](https://img.shields.io/badge/Vercel-Hosted-000000)](https://vercel.com)
+[![Next.js](https://img.shields.io/badge/Next.js-14-000000)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6)](https://www.typescriptlang.org)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-38bdf8)](https://tailwindcss.com)
+[![IndexedDB](https://img.shields.io/badge/IndexedDB-Local%20Storage-0a66c2)](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API)
+
+![Research UI](docs/images/research-ui.png)
 
 This project ports the original ThinkDepth deep-research workflow to a Venice-powered Next.js app.
 Legacy Python code is preserved under `python_reference/` for reference. (Do not edit in that folder). The URL for the original repo is here: https://github.com/thinkdepthai/Deep_Research
 Original Python benchmark code is preserved under `deep_research_bench_reference/` for reference. (Do not edit in that folder). The URL for the original repo is here: https://github.com/Ayanami0730/deep_research_bench
+
+## Next goals
+
+- Benchmarking on deep_research_bench at https://github.com/Ayanami0730/deep_research_bench
 
 ## Local setup
 
@@ -69,7 +84,7 @@ This mirrors the Python reference implementation where each research topic trigg
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| Max iterations | 15 | Maximum supervisor tool-calling iterations |
+| Max iterations | 5 | Maximum supervisor tool-calling iterations |
 | Max concurrent researchers | 3 | Parallel researcher agents per batch |
 | Max searches per topic | 5 | Search calls per researcher agent |
 
@@ -92,7 +107,7 @@ The benchmark reference repo lives in `deep_research_bench_reference/` (read-onl
 npm run dev
 ```
 
-2. **Quick test (low settings, task 51)** - confirm everything works:
+2. **CLI smoke test (task 51)** - confirm everything works:
 
 ```bash
 python3 benchmark-adapter/adapter_nextjs.py \
@@ -170,6 +185,8 @@ Note: The scorer will show warnings like "No target article found for task promp
 | `--max-iterations N` | Research depth (1=minimal, 15=thorough) |
 | `--max-concurrent-researchers N` | Parallel research agents |
 | `--stream-read-timeout N` | Seconds to wait for data before timeout |
+| `--stream-progress` | Emit SSE progress events to the console |
+| `--check-health` | Call `/api/health` before running tasks |
 | `--no-resume` | Start fresh, ignore previous results |
 | `--retries N` | Retry failed tasks N times |
 | `--model-name <name>` | Output filename |

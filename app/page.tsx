@@ -482,7 +482,7 @@ export default function HomePage() {
         <div>
           <h1>OpenDeepResesarch</h1>
           <p className="page-subtitle">
-        Powered by Venice and Brave Search. OpenDeepResesarch is a fork of
+            Powered by Venice and Brave Search. OpenDeepResesarch is a fork of
             ThinkDepth.ai Deep Research. Original Python repo: {" "}
             <a
               href="https://github.com/thinkdepthai/Deep_Research?tab=readme-ov-file"
@@ -493,7 +493,7 @@ export default function HomePage() {
             </a>
             . This is a rewrite in TypeScript, using Venice and Brave, and hosted on
             Vercel. Other features and prompts have been changed as part of the fork.
-            Code is here: {" "}
+            Results are saved locally in the browser using IndexedDB. Code is here: {" "}
             <a
               href="https://github.com/wulfmeister/Deep_Research"
               target="_blank"
