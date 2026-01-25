@@ -40,11 +40,11 @@ export default function ExportButtons({
   };
 
   return (
-    <div style={{ display: "flex", gap: 8 }}>
-      <button onClick={handlePdfExport} style={{ padding: "6px 12px" }}>
+    <div className="export-actions">
+      <button onClick={handlePdfExport} className="btn btn-secondary">
         Download PDF
       </button>
-      <button onClick={handleMarkdownExport} style={{ padding: "6px 12px" }}>
+      <button onClick={handleMarkdownExport} className="btn btn-secondary">
         Export Markdown
       </button>
     </div>

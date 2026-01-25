@@ -1,8 +1,10 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "Deep Research",
-  description: "Venice-powered deep research"
+  title:
+    "OpenDeepResesarch, fork of \"ThinkDepth.ai Deep Research\", powered by Venice and Brave Search",
+  description:
+    "OpenDeepResesarch is a fork of ThinkDepth.ai Deep Research powered by Venice and Brave Search."
 };
 
 export default function RootLayout({

@@ -6,6 +6,10 @@ import remarkGfm from "remark-gfm";
 
 interface ReportViewerProps {
   report: string;
+  targetId?: string;
+  title?: string;
+  showTitle?: boolean;
+  headerActions?: ReactNode;
 }
 
 const citationRegex = /\^(\d+(?:,\d+)*)|\[(\d+(?:,\d+)*)\]/g;
@@ -111,11 +115,17 @@ function enhanceNode(node: ReactNode, sources: Record<string, string>): ReactNod
   return node;
 }
 
-export default function ReportViewer({ report }: ReportViewerProps) {
+export default function ReportViewer({
+  report,
+  targetId = "report-content",
+  title = "Report",
+  showTitle = false,
+  headerActions
+}: ReportViewerProps) {
   if (!report) {
     return (
       <section className="card">
-        <h2 className="text-lg font-semibold">Report</h2>
+        <h2 className="text-lg font-semibold">{title}</h2>
         <p>No report yet.</p>
       </section>
     );
@@ -124,7 +134,17 @@ export default function ReportViewer({ report }: ReportViewerProps) {
   const sources = extractSources(report);
 
   return (
-    <section className="card" id="report-content">
+    <section className="card" id={targetId}>
+      {(showTitle || headerActions) && (
+        <div className="section-header report-viewer-header">
+          {showTitle ? (
+            <h2>{title}</h2>
+          ) : (
+            <span />
+          )}
+          {headerActions}
+        </div>
+      )}
       <div className="prose prose-slate max-w-none">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}

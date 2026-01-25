@@ -5,11 +5,12 @@ import ResearchForm from "../components/ResearchForm";
 import ReportViewer from "../components/ReportViewer";
 import ExportButtons from "../components/PdfExport";
 import ProgressSteps, {
+  ActivityLogEntry,
   ProgressStep,
   StepStatus,
   TopicProgress
 } from "../components/ProgressSteps";
-import { useResearchHistory } from "../hooks/useResearchHistory";
+import { ResearchRecord, useResearchHistory } from "../hooks/useResearchHistory";
 import { MAX_SEARCH_ITERATIONS } from "../lib/workflow/config";
 import type { ProgressEvent } from "../lib/workflow/progress";
 import {
@@ -18,17 +19,36 @@ import {
   ResearchStats
 } from "../lib/venice/stats";
 
+const ESTIMATED_MINUTES_PER_ITERATION = 12;
+const ESTIMATED_COST_PER_RESEARCHER = 0.015;
+const THEME_STORAGE_KEY = "opendeepresearch-theme";
+const STEP_LABELS: Record<string, string> = {
+  brief: "research brief",
+  draft: "draft report",
+  research: "research",
+  final: "final report"
+};
+
 export default function HomePage() {
   const [prompt, setPrompt] = useState("");
   const [report, setReport] = useState("");
   const [loading, setLoading] = useState(false);
-  const [maxIterations, setMaxIterations] = useState(15);
+  const [maxIterations, setMaxIterations] = useState(5);
   const [maxConcurrentResearchers, setMaxConcurrentResearchers] = useState(3);
-  const [enableWebScraping, setEnableWebScraping] = useState(true);
+  const [enableWebScraping, setEnableWebScraping] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<ResearchStats | null>(null);
   const [topicProgress, setTopicProgress] = useState<TopicProgress[]>([]);
+  const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
+  const [historyPreview, setHistoryPreview] = useState<ResearchRecord | null>(
+    null
+  );
+  const [pendingHistoryExportId, setPendingHistoryExportId] = useState<string | null>(
+    null
+  );
   const eventSourceRef = useRef<EventSource | null>(null);
+  const logCounterRef = useRef(0);
 
   const initialSteps: ProgressStep[] = [
     {
@@ -49,13 +69,69 @@ export default function HomePage() {
 
   const [steps, setSteps] = useState<ProgressStep[]>(initialSteps);
 
-  const { history, saveRecord } = useResearchHistory();
+  const { history, saveRecord, deleteRecord } = useResearchHistory();
+
+  const estimateUnits = maxIterations * maxConcurrentResearchers;
+  const estimateMultiplier = enableWebScraping ? 2 : 1;
+  const parallelSpeedup = Math.sqrt(Math.max(1, maxConcurrentResearchers));
+  const estimatedMinutes = Math.max(
+    1,
+    Math.round(
+      ((maxIterations * ESTIMATED_MINUTES_PER_ITERATION) / parallelSpeedup) *
+        estimateMultiplier
+    )
+  );
+  const estimatedCost =
+    estimateUnits * ESTIMATED_COST_PER_RESEARCHER * estimateMultiplier;
+
+  useEffect(() => {
+    const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+    if (storedTheme === "light" || storedTheme === "dark") {
+      setTheme(storedTheme);
+      return;
+    }
+    const prefersDark = window.matchMedia(
+      "(prefers-color-scheme: dark)"
+    ).matches;
+    setTheme(prefersDark ? "dark" : "light");
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+  }, [theme]);
 
   useEffect(() => {
     return () => {
       eventSourceRef.current?.close();
     };
   }, []);
+
+  useEffect(() => {
+    if (!pendingHistoryExportId || !historyPreview) return;
+    if (historyPreview.id !== pendingHistoryExportId) return;
+    const exportPreview = async () => {
+      const target = document.getElementById("history-report");
+      if (!target) return;
+      const html2pdf = (await import("html2pdf.js")).default;
+      html2pdf()
+        .from(target)
+        .set({
+          margin: 0.5,
+          filename: `deep-research-${historyPreview.id}.pdf`,
+          html2canvas: { scale: 2 },
+          jsPDF: { unit: "in", format: "letter", orientation: "portrait" }
+        })
+        .save();
+    };
+
+    const timeout = window.setTimeout(() => {
+      void exportPreview();
+      setPendingHistoryExportId(null);
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
+  }, [historyPreview, pendingHistoryExportId]);
 
   const setStepStatus = (id: string, status: StepStatus) => {
     setSteps((prev) =>
@@ -66,16 +142,20 @@ export default function HomePage() {
   const resetSteps = () => {
     setSteps(initialSteps.map((step) => ({ ...step, substeps: [] })));
     setTopicProgress([]);
+    setActivityLog([]);
+    logCounterRef.current = 0;
   };
 
-  const addSubstep = (stepId: string, message: string) => {
-    setSteps((prev) =>
-      prev.map((step) => {
-        if (step.id !== stepId) return step;
-        if (step.substeps.includes(message)) return step;
-        return { ...step, substeps: [...step.substeps, message] };
-      })
-    );
+  const addLogEntry = (message: string, level: ActivityLogEntry["level"] = "info") => {
+    setActivityLog((prev) => [
+      ...prev,
+      {
+        id: `log-${logCounterRef.current++}`,
+        message,
+        timestamp: Date.now(),
+        level
+      }
+    ]);
   };
 
   const updateTopic = (
@@ -92,26 +172,36 @@ export default function HomePage() {
     });
   };
 
+  const renderStatsSummary = (stats: ResearchStats) => (
+    <>
+      API calls: {stats.apiCalls} · Searches: {stats.searchCalls} · Scrapes: {" "}
+      {stats.scrapingCalls} · Tokens: {stats.promptTokens + stats.completionTokens} · Est.
+      cost: ~${stats.estimatedCost.toFixed(2)}
+      {!stats.pricingIncludesModel ? " (search/scrape only)" : ""}
+    </>
+  );
+
   const handleProgressEvent = (event: ProgressEvent) => {
     switch (event.type) {
       case "step_start":
         setStepStatus(event.step, "running");
         if (event.message) {
-          addSubstep(event.step, event.message);
+          addLogEntry(event.message);
         }
         break;
       case "step_complete":
         setStepStatus(event.step, "done");
+        addLogEntry(
+          `Completed ${STEP_LABELS[event.step] ?? event.step}.`,
+          "success"
+        );
         break;
       case "substep":
-        addSubstep(event.step, event.message);
+        addLogEntry(event.message);
         break;
       case "topic_start":
-        addSubstep(
-          "research",
-          `Running searches across ${event.totalTopics} topic${
-            event.totalTopics === 1 ? "" : "s"
-          }`
+        addLogEntry(
+          `Topic ${event.topicIndex}/${event.totalTopics} started: ${event.topic}`
         );
         updateTopic(event.topic, (current) => ({
           name: event.topic,
@@ -123,6 +213,9 @@ export default function HomePage() {
         }));
         break;
       case "topic_search":
+        addLogEntry(
+          `Topic search ${event.searchIndex}/${MAX_SEARCH_ITERATIONS}: ${event.topic} · ${event.query}`
+        );
         updateTopic(event.topic, (current) => ({
           name: event.topic,
           status: "running",
@@ -133,6 +226,12 @@ export default function HomePage() {
         }));
         break;
       case "topic_complete":
+        addLogEntry(
+          `Topic completed ${event.searchCount} search${
+            event.searchCount === 1 ? "" : "es"
+          }: ${event.topic}`,
+          "success"
+        );
         updateTopic(event.topic, (current) => ({
           name: event.topic,
           status: "done",
@@ -146,15 +245,18 @@ export default function HomePage() {
         setStats(event.stats);
         setReport(event.report);
         setLoading(false);
+        addLogEntry("Research complete.", "success");
         void saveRecord({
           id: crypto.randomUUID(),
           prompt,
           report: event.report,
+          stats: event.stats,
           createdAt: new Date().toISOString()
         });
         break;
       case "error":
         setError(event.message);
+        addLogEntry(`Error: ${event.message}`, "error");
         setSteps((prev) => {
           const running = prev.find((step) => step.status === "running");
           if (!running) return prev;
@@ -176,6 +278,7 @@ export default function HomePage() {
     }
     setLoading(false);
     setError("Research cancelled by user");
+    addLogEntry("Research cancelled by user.", "error");
     setSteps((prev) => {
       const running = prev.find((step) => step.status === "running");
       if (!running) return prev;
@@ -183,6 +286,22 @@ export default function HomePage() {
         step.id === running.id ? { ...step, status: "error" } : step
       );
     });
+  };
+
+  const handleHistoryExport = (entry: ResearchRecord) => {
+    setHistoryPreview(entry);
+    setPendingHistoryExportId(entry.id);
+  };
+
+  const handleHistoryDelete = async (entry: ResearchRecord) => {
+    const confirmed = window.confirm(
+      "Delete this saved report? This cannot be undone."
+    );
+    if (!confirmed) return;
+    if (historyPreview?.id === entry.id) {
+      setHistoryPreview(null);
+    }
+    await deleteRecord(entry.id);
   };
 
   const handleStreamingSubmit = () => {
@@ -232,7 +351,8 @@ export default function HomePage() {
     setLoading(true);
     setError(null);
     setReport("");
-    setStats(createResearchStats());
+    let accumulatedStats = createResearchStats();
+    setStats(accumulatedStats);
     resetSteps();
 
     try {
@@ -251,9 +371,8 @@ export default function HomePage() {
         researchBrief: string;
         stats: ResearchStats;
       };
-      setStats((prev) =>
-        mergeResearchStats(prev ?? createResearchStats(), briefData.stats)
-      );
+      accumulatedStats = mergeResearchStats(accumulatedStats, briefData.stats);
+      setStats(accumulatedStats);
       setStepStatus("brief", "done");
 
       setStepStatus("draft", "running");
@@ -271,9 +390,8 @@ export default function HomePage() {
         draftReport: string;
         stats: ResearchStats;
       };
-      setStats((prev) =>
-        mergeResearchStats(prev ?? createResearchStats(), draftData.stats)
-      );
+      accumulatedStats = mergeResearchStats(accumulatedStats, draftData.stats);
+      setStats(accumulatedStats);
       setStepStatus("draft", "done");
 
       setStepStatus("research", "running");
@@ -299,9 +417,8 @@ export default function HomePage() {
         topics: string[];
         stats: ResearchStats;
       };
-      setStats((prev) =>
-        mergeResearchStats(prev ?? createResearchStats(), supervisorData.stats)
-      );
+      accumulatedStats = mergeResearchStats(accumulatedStats, supervisorData.stats);
+      setStats(accumulatedStats);
       setStepStatus("research", "done");
       const completedTopics = supervisorData.topics ?? [];
       setTopicProgress(
@@ -333,9 +450,8 @@ export default function HomePage() {
         report: string;
         stats: ResearchStats;
       };
-      setStats((prev) =>
-        mergeResearchStats(prev ?? createResearchStats(), finalData.stats)
-      );
+      accumulatedStats = mergeResearchStats(accumulatedStats, finalData.stats);
+      setStats(accumulatedStats);
       setStepStatus("final", "done");
       setReport(finalData.report);
 
@@ -343,6 +459,7 @@ export default function HomePage() {
         id: crypto.randomUUID(),
         prompt,
         report: finalData.report,
+        stats: accumulatedStats,
         createdAt: new Date().toISOString()
       });
     } catch (err) {
@@ -361,13 +478,53 @@ export default function HomePage() {
 
   return (
     <main>
-      <h1>Deep Research (Venice)</h1>
+      <div className="page-header">
+        <div>
+          <h1>OpenDeepResesarch</h1>
+          <p className="page-subtitle">
+        Powered by Venice and Brave Search. OpenDeepResesarch is a fork of
+            ThinkDepth.ai Deep Research. Original Python repo: {" "}
+            <a
+              href="https://github.com/thinkdepthai/Deep_Research?tab=readme-ov-file"
+              target="_blank"
+              rel="noreferrer"
+            >
+              thinkdepthai/Deep_Research
+            </a>
+            . This is a rewrite in TypeScript, using Venice and Brave, and hosted on
+            Vercel. Other features and prompts have been changed as part of the fork.
+            Code is here: {" "}
+            <a
+              href="https://github.com/wulfmeister/Deep_Research"
+              target="_blank"
+              rel="noreferrer"
+            >
+              wulfmeister/Deep_Research
+            </a>
+            .
+          </p>
+        </div>
+        <label className="theme-toggle">
+          <span className="theme-label">Dark mode</span>
+          <input
+            type="checkbox"
+            className="theme-toggle-input"
+            checked={theme === "dark"}
+            onChange={(event) =>
+              setTheme(event.target.checked ? "dark" : "light")
+            }
+          />
+          <span className="theme-toggle-slider" />
+        </label>
+      </div>
       <ResearchForm
         prompt={prompt}
         onPromptChange={setPrompt}
         maxIterations={maxIterations}
         maxConcurrentResearchers={maxConcurrentResearchers}
         enableWebScraping={enableWebScraping}
+        estimatedMinutes={estimatedMinutes}
+        estimatedCost={estimatedCost}
         onSettingsChange={({
           maxIterations,
           maxConcurrentResearchers,
@@ -386,6 +543,7 @@ export default function HomePage() {
         steps={steps}
         topics={topicProgress}
         maxSearchIterations={MAX_SEARCH_ITERATIONS}
+        activityLog={activityLog}
       />
 
       {error && (
@@ -396,19 +554,12 @@ export default function HomePage() {
       )}
 
       <section className="card">
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <h2 style={{ margin: 0 }}>Report</h2>
-          {report && (
-            <ExportButtons targetId="report-content" markdown={report} />
-          )}
+        <div className="section-header">
+          <h2>Report</h2>
+          {report && <ExportButtons targetId="report-content" markdown={report} />}
         </div>
         {report && stats && (
-          <p style={{ marginTop: 12 }}>
-            API calls: {stats.apiCalls} · Searches: {stats.searchCalls} · Scrapes: {" "}
-            {stats.scrapingCalls} · Tokens: {stats.promptTokens + stats.completionTokens} · Est.
-            cost: ~${stats.estimatedCost.toFixed(2)}
-            {!stats.pricingIncludesModel ? " (search/scrape only)" : ""}
-          </p>
+          <p className="report-meta">{renderStatsSummary(stats)}</p>
         )}
       </section>
 
@@ -423,13 +574,67 @@ export default function HomePage() {
             <div className="history-item" key={entry.id}>
               <strong>{new Date(entry.createdAt).toLocaleString()}</strong>
               <p>{entry.prompt}</p>
-              <button onClick={() => setReport(entry.report)}>
-                View Report
-              </button>
+              <div className="history-actions">
+                <button
+                  onClick={() => setHistoryPreview(entry)}
+                  className="btn btn-secondary"
+                >
+                  View Report
+                </button>
+                <button
+                  onClick={() => handleHistoryExport(entry)}
+                  className="btn btn-secondary"
+                >
+                  Export PDF
+                </button>
+                <button
+                  onClick={() => handleHistoryDelete(entry)}
+                  className="btn btn-danger"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           ))
         )}
+        <p className="helper-text">
+          Viewing a saved report will not interrupt a running research job.
+        </p>
+        {historyPreview && (
+          <div className="history-preview-bar">
+            <span className="helper-text">
+              Showing saved report from {new Date(historyPreview.createdAt).toLocaleString()}.
+            </span>
+            {historyPreview.stats && (
+              <span className="helper-text">
+                {renderStatsSummary(historyPreview.stats)}
+              </span>
+            )}
+            <button
+              onClick={() => setHistoryPreview(null)}
+              type="button"
+              className="btn btn-secondary"
+            >
+              Clear Preview
+            </button>
+          </div>
+        )}
       </section>
+
+      {historyPreview && (
+        <ReportViewer
+          report={historyPreview.report}
+          title="Saved Report Preview"
+          targetId="history-report"
+          showTitle
+          headerActions={
+            <ExportButtons
+              targetId="history-report"
+              markdown={historyPreview.report}
+            />
+          }
+        />
+      )}
     </main>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { entries, set } from "idb-keyval";
+import { del, entries, set } from "idb-keyval";
+import type { ResearchStats } from "../lib/venice/stats";
 import { useCallback, useEffect, useState } from "react";
 
 export interface ResearchRecord {
@@ -8,6 +9,7 @@ export interface ResearchRecord {
   prompt: string;
   report: string;
   createdAt: string;
+  stats?: ResearchStats;
 }
 
 export function useResearchHistory() {
@@ -36,9 +38,18 @@ export function useResearchHistory() {
     [refreshHistory]
   );
 
+  const deleteRecord = useCallback(
+    async (recordId: string) => {
+      await del(recordId);
+      await refreshHistory();
+    },
+    [refreshHistory]
+  );
+
   return {
     history,
     saveRecord,
+    deleteRecord,
     refreshHistory
   };
 }
