@@ -1,9 +1,9 @@
-# Deep Research (Venice + Next.js)
-# OpenDeepResesarch
+# Venice Deep Research (Venice + Brave Search + Typescript)
 
 [![Venice](https://img.shields.io/badge/Venice-API-7b1d1d)](https://venice.ai)
 [![Brave Search](https://img.shields.io/badge/Brave-Search-fc4c02)](https://brave.com/search/)
 [![Vercel](https://img.shields.io/badge/Vercel-Hosted-000000)](https://vercel.com)
+[![Railway](https://img.shields.io/badge/Railway-Deploy-0b0d0e)](https://railway.app)
 [![Next.js](https://img.shields.io/badge/Next.js-14-000000)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6)](https://www.typescriptlang.org)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-38bdf8)](https://tailwindcss.com)
@@ -14,6 +14,8 @@
 This project ports the original ThinkDepth deep-research workflow to a Venice-powered Next.js app.
 Legacy Python code is preserved under `python_reference/` for reference. (Do not edit in that folder). The URL for the original repo is here: https://github.com/thinkdepthai/Deep_Research
 Original Python benchmark code is preserved under `deep_research_bench_reference/` for reference. (Do not edit in that folder). The URL for the original repo is here: https://github.com/Ayanami0730/deep_research_bench
+
+Technically works with Vercel, but will timeout on the ~13 minute maximum streaming limit. Deploy to Railway for now.
 
 ## Next goals
 

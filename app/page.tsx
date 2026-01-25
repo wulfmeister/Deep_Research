@@ -480,10 +480,10 @@ export default function HomePage() {
     <main>
       <div className="page-header">
         <div>
-          <h1>OpenDeepResesarch</h1>
+          <h1>Venice Deep Research (Venice + Brave Search + Typescript)</h1>
           <p className="page-subtitle">
-            Powered by Venice and Brave Search. OpenDeepResesarch is a fork of
-            ThinkDepth.ai Deep Research. Original Python repo: {" "}
+            Powered by Venice and Brave Search. This is a fork of ThinkDepth.ai Deep
+            Research. Original Python repo: {" "}
             <a
               href="https://github.com/thinkdepthai/Deep_Research?tab=readme-ov-file"
               target="_blank"
@@ -548,7 +548,7 @@ export default function HomePage() {
 
       {error && (
         <section className="card">
-          <h2>Error</h2>
+          <h2>Run Errors</h2>
           <p>{error}</p>
         </section>
       )}
