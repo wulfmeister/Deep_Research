@@ -10,6 +10,7 @@ node_modules
 coverage
 *.log
 tmp/
+tsconfig.tsbuildinfo
 
 # Python
 __pycache__/
