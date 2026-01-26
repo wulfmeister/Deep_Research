@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: venice-deep-research
+    runtime: node
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: VENICE_API_KEY
+        sync: false
+    healthCheckPath: /api/health

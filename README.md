@@ -2,8 +2,7 @@
 
 [![Venice](https://img.shields.io/badge/Venice-API-7b1d1d)](https://venice.ai)
 [![Brave Search](https://img.shields.io/badge/Brave-Search-fc4c02)](https://brave.com/search/)
-[![Vercel](https://img.shields.io/badge/Vercel-Hosted-000000)](https://vercel.com)
-[![Railway](https://img.shields.io/badge/Railway-Deploy-0b0d0e)](https://railway.app)
+[![Render](https://img.shields.io/badge/Render-Deploy-46e3b7)](https://render.com)
 [![Next.js](https://img.shields.io/badge/Next.js-14-000000)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6)](https://www.typescriptlang.org)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-38bdf8)](https://tailwindcss.com)
@@ -15,7 +14,7 @@ This project ports the original ThinkDepth deep-research workflow to a Venice-po
 Legacy Python code is preserved under `python_reference/` for reference. (Do not edit in that folder). The URL for the original repo is here: https://github.com/thinkdepthai/Deep_Research
 Original Python benchmark code is preserved under `deep_research_bench_reference/` for reference. (Do not edit in that folder). The URL for the original repo is here: https://github.com/Ayanami0730/deep_research_bench
 
-Technically works with Vercel, but will timeout on the ~13 minute maximum streaming limit. Deploy to Railway for now.
+**Deploy to Render** for long-running research queries. Vercel and Railway both have hard timeout limits that terminate SSE connections (Vercel: ~13 min, Railway: 5 min). Render allows configurable request timeouts up to several hours.
 
 > **CAVEAT:** I have no idea what I am doing, please send help.
 
@@ -102,6 +101,42 @@ This mirrors the Python reference implementation where each research topic trigg
 |----------|----------|-------------|
 | `VENICE_API_KEY` | Yes | Your Venice API key |
 | `VENICE_DEBUG` | No | Set to `1` to log search queries and citations |
+
+## Deploy to Render
+
+Render is recommended for production deployment because it supports configurable request timeouts, allowing long-running research queries to complete without being terminated.
+
+### Quick Deploy
+
+1. Create a [Render](https://render.com) account
+2. Connect your GitHub repository
+3. Create a new **Web Service**
+4. Configure the service:
+   - **Build Command:** `npm install && npm run build`
+   - **Start Command:** `npm run start`
+5. Add environment variable: `VENICE_API_KEY`
+6. **Important:** Go to Settings → scroll to "Request Timeout" → set to **900 seconds** (15 min) or higher
+
+### Using render.yaml Blueprint
+
+Alternatively, use the included `render.yaml` to auto-configure the service:
+
+1. Fork this repo
+2. In Render dashboard, click "New" → "Blueprint"
+3. Select your forked repo
+4. Render will detect `render.yaml` and configure automatically
+5. Add your `VENICE_API_KEY` in the environment variables
+6. Manually set Request Timeout to 900s in Settings (not configurable via blueprint)
+
+### Why Not Railway/Vercel?
+
+| Platform | SSE Timeout | Notes |
+|----------|-------------|-------|
+| **Render** | Configurable (up to hours) | Recommended |
+| Railway | 5 min (hard limit) | Connection killed mid-research |
+| Vercel | 10s-5min (plan dependent) | Too short for deep research |
+
+Railway enforces a hard 5-minute HTTP timeout on all connections ([source](https://station.railway.com/questions/sse-connection-fails-with-http-2-error-o-ea4a5d76)). Research runs taking longer get killed with `ERR_HTTP2_PROTOCOL_ERROR`.
 
 ## Benchmark adapter
 
