@@ -639,3 +639,160 @@ section {
     transform: rotate(360deg);
   }
 }
+
+/* Report prose styling */
+.prose {
+  --tw-prose-body: var(--text);
+  --tw-prose-headings: var(--text);
+  --tw-prose-links: var(--accent-strong);
+  --tw-prose-bold: var(--text);
+  --tw-prose-quotes: var(--muted);
+  --tw-prose-quote-borders: var(--accent);
+}
+
+.prose h1 {
+  font-family: var(--font-serif);
+  color: var(--heading-accent);
+  border-bottom: 2px solid var(--card-border);
+  padding-bottom: 12px;
+  margin-bottom: 24px;
+}
+
+.prose h2 {
+  font-family: var(--font-serif);
+  color: var(--text);
+  border-bottom: 1px solid var(--card-border);
+  padding-bottom: 8px;
+  margin-top: 32px;
+}
+
+.prose h3 {
+  font-family: var(--font-serif);
+  color: var(--text);
+  margin-top: 24px;
+}
+
+/* Table styling */
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 0.9rem;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.prose thead {
+  background: var(--surface-3);
+}
+
+.prose th {
+  padding: 12px 14px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text);
+  border-bottom: 2px solid var(--card-border);
+}
+
+.prose td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--card-border);
+  color: var(--text);
+}
+
+.prose tr:last-child td {
+  border-bottom: none;
+}
+
+.prose tbody tr:nth-child(even) {
+  background: var(--surface-2);
+}
+
+.prose tbody tr:hover {
+  background: var(--surface-3);
+}
+
+/* Blockquote styling */
+.prose blockquote {
+  border-left: 4px solid var(--accent);
+  background: var(--surface-2);
+  padding: 12px 20px;
+  margin: 20px 0;
+  border-radius: 0 8px 8px 0;
+  font-style: italic;
+  color: var(--muted);
+}
+
+/* Code styling */
+.prose code {
+  background: var(--surface-3);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  color: var(--accent-strong);
+}
+
+.prose pre {
+  background: var(--surface-3);
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  border: 1px solid var(--card-border);
+}
+
+.prose pre code {
+  background: none;
+  padding: 0;
+  color: var(--text);
+}
+
+/* List styling */
+.prose ul,
+.prose ol {
+  padding-left: 24px;
+  margin: 16px 0;
+}
+
+.prose li {
+  margin: 8px 0;
+}
+
+.prose li::marker {
+  color: var(--accent);
+}
+
+/* Horizontal rule */
+.prose hr {
+  border: none;
+  border-top: 2px solid var(--card-border);
+  margin: 32px 0;
+}
+
+/* Sources section styling */
+.prose h1#sources,
+.prose h2#sources,
+.prose h3#sources {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 2px solid var(--card-border);
+}
+
+/* Sources list - make each citation a block */
+.prose h1#sources ~ p,
+.prose h2#sources ~ p,
+.prose h3#sources ~ p {
+  white-space: pre-line;
+  line-height: 1.8;
+}
+
+/* Force long URLs to wrap */
+.prose a {
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+
+.prose {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
