@@ -218,7 +218,8 @@ function createStreamResponse(
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache, no-transform",
       Connection: "keep-alive",
-      "X-Accel-Buffering": "no" // Disable nginx/proxy buffering for SSE
+      "X-Accel-Buffering": "no", // Disable nginx/proxy buffering for SSE
+      "Alt-Svc": "clear" // Disable HTTP/3 to prevent QUIC protocol errors on long-lived SSE
     }
   });
 }
