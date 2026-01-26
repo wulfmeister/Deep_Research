@@ -10,6 +10,7 @@ interface ReportViewerProps {
   title?: string;
   showTitle?: boolean;
   headerActions?: ReactNode;
+  metaContent?: ReactNode;
 }
 
 const citationRegex = /\^(\d+(?:,\d+)*)|\[(\d+(?:,\d+)*)\]/g;
@@ -120,12 +121,16 @@ export default function ReportViewer({
   targetId = "report-content",
   title = "Report",
   showTitle = false,
-  headerActions
+  headerActions,
+  metaContent
 }: ReportViewerProps) {
   if (!report) {
     return (
       <section className="card">
-        <h2 className="text-lg font-semibold">{title}</h2>
+        <div className="section-header">
+          <h2>{title}</h2>
+          {headerActions}
+        </div>
         <p>No report yet.</p>
       </section>
     );
@@ -135,16 +140,15 @@ export default function ReportViewer({
 
   return (
     <section className="card" id={targetId}>
-      {(showTitle || headerActions) && (
-        <div className="section-header report-viewer-header">
-          {showTitle ? (
-            <h2>{title}</h2>
-          ) : (
-            <span />
-          )}
-          {headerActions}
-        </div>
-      )}
+      <div className="section-header report-viewer-header">
+        {showTitle ? (
+          <h2>{title}</h2>
+        ) : (
+          <h2>{title}</h2>
+        )}
+        {headerActions}
+      </div>
+      {metaContent}
       <div className="prose prose-slate max-w-none">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}

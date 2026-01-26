@@ -553,17 +553,11 @@ export default function HomePage() {
         </section>
       )}
 
-      <section className="card">
-        <div className="section-header">
-          <h2>Report</h2>
-          {report && <ExportButtons targetId="report-content" markdown={report} />}
-        </div>
-        {report && stats && (
-          <p className="report-meta">{renderStatsSummary(stats)}</p>
-        )}
-      </section>
-
-      <ReportViewer report={report} />
+      <ReportViewer
+        report={report}
+        headerActions={report ? <ExportButtons targetId="report-content" markdown={report} /> : undefined}
+        metaContent={report && stats ? <p className="report-meta">{renderStatsSummary(stats)}</p> : undefined}
+      />
 
       <section className="card">
         <h2>History</h2>
@@ -576,10 +570,15 @@ export default function HomePage() {
               <p>{entry.prompt}</p>
               <div className="history-actions">
                 <button
-                  onClick={() => setHistoryPreview(entry)}
+                  onClick={() => {
+                    setHistoryPreview(entry);
+                    setTimeout(() => {
+                      document.getElementById("history-report")?.scrollIntoView({ behavior: "smooth" });
+                    }, 50);
+                  }}
                   className="btn btn-secondary"
                 >
-                  View Report
+                  View Report ↓
                 </button>
                 <button
                   onClick={() => handleHistoryExport(entry)}

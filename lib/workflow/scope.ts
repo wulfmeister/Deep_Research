@@ -35,24 +35,44 @@ export async function writeResearchBrief(
     date: getTodayStr()
   });
 
-  const response = await createChatCompletion(
-    {
-      model,
-      messages: [{ role: "user", content: prompt }],
-      response_format: jsonSchemaResponse("research_brief", {
-        type: "object",
-        properties: {
-          research_brief: { type: "string" }
-        },
-        required: ["research_brief"]
-      })
-    },
-    stats
-  );
+  try {
+    const response = await createChatCompletion(
+      {
+        model,
+        messages: [{ role: "user", content: prompt }],
+        response_format: jsonSchemaResponse("research_brief", {
+          type: "object",
+          properties: {
+            research_brief: { type: "string" }
+          },
+          required: ["research_brief"]
+        })
+      },
+      stats
+    );
 
-  const content = response.choices[0]?.message?.content ?? "";
-  const parsed = JSON.parse(content) as { research_brief: string };
-  return parsed.research_brief;
+    const content = response.choices[0]?.message?.content;
+
+    if (!content) {
+      throw new Error("Venice returned empty response for research brief");
+    }
+
+    let parsed: { research_brief: string };
+    try {
+      parsed = JSON.parse(content) as { research_brief: string };
+    } catch {
+      throw new Error("Venice returned invalid JSON for research brief");
+    }
+
+    if (!parsed.research_brief) {
+      throw new Error("Venice response missing research_brief field");
+    }
+
+    return parsed.research_brief;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    throw new Error(`Research brief generation failed: ${message}`);
+  }
 }
 
 export async function writeDraftReport(

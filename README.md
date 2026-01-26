@@ -8,13 +8,15 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-38bdf8)](https://tailwindcss.com)
 [![IndexedDB](https://img.shields.io/badge/IndexedDB-Local%20Storage-0a66c2)](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API)
 
+**Try it live:** [venice-deep-research.onrender.com](https://venice-deep-research.onrender.com/) ($10 of daily Venice inference available)
+
 ![Research UI](docs/images/research-ui.png)
 
 This project ports the original ThinkDepth deep-research workflow to a Venice-powered Next.js app.
 Legacy Python code is preserved under `python_reference/` for reference. (Do not edit in that folder). The URL for the original repo is here: https://github.com/thinkdepthai/Deep_Research
 Original Python benchmark code is preserved under `deep_research_bench_reference/` for reference. (Do not edit in that folder). The URL for the original repo is here: https://github.com/Ayanami0730/deep_research_bench
 
-**Deploy to Render** for long-running research queries. Vercel and Railway both have hard timeout limits that terminate SSE connections (Vercel: ~13 min, Railway: 5 min). Render allows configurable request timeouts up to several hours.
+**Deploy to Render** for long-running research queries. Vercel and Railway both have hard timeout limits that terminate SSE connections (Vercel: ~13 min, Railway: 5 min).
 
 > **CAVEAT:** I have no idea what I am doing, please send help.
 
@@ -104,7 +106,7 @@ This mirrors the Python reference implementation where each research topic trigg
 
 ## Deploy to Render
 
-Render is recommended for production deployment because it supports configurable request timeouts, allowing long-running research queries to complete without being terminated.
+Render is recommended for production deployment because it handles long-running SSE connections better than alternatives.
 
 ### Quick Deploy
 
@@ -115,7 +117,6 @@ Render is recommended for production deployment because it supports configurable
    - **Build Command:** `npm install && npm run build`
    - **Start Command:** `npm run start`
 5. Add environment variable: `VENICE_API_KEY`
-6. **Important:** Go to Settings → scroll to "Request Timeout" → set to **900 seconds** (15 min) or higher
 
 ### Using render.yaml Blueprint
 
@@ -126,13 +127,12 @@ Alternatively, use the included `render.yaml` to auto-configure the service:
 3. Select your forked repo
 4. Render will detect `render.yaml` and configure automatically
 5. Add your `VENICE_API_KEY` in the environment variables
-6. Manually set Request Timeout to 900s in Settings (not configurable via blueprint)
 
 ### Why Not Railway/Vercel?
 
 | Platform | SSE Timeout | Notes |
 |----------|-------------|-------|
-| **Render** | Configurable (up to hours) | Recommended |
+| **Render** | Long | Recommended |
 | Railway | 5 min (hard limit) | Connection killed mid-research |
 | Vercel | 10s-5min (plan dependent) | Too short for deep research |
 

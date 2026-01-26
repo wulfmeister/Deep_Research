@@ -31,18 +31,29 @@ export async function generateFinalReport({
     date: getTodayStr()
   });
 
-  const response = await createChatCompletion(
-    {
-      model,
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.3,
-      venice_parameters: {
-        include_venice_system_prompt: false,
-        strip_thinking_response: true
-      }
-    },
-    stats
-  );
+  try {
+    const response = await createChatCompletion(
+      {
+        model,
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.3,
+        venice_parameters: {
+          include_venice_system_prompt: false,
+          strip_thinking_response: true
+        }
+      },
+      stats
+    );
 
-  return response.choices[0]?.message?.content ?? "";
+    const content = response.choices[0]?.message?.content;
+
+    if (!content) {
+      throw new Error("Venice returned empty response for final report");
+    }
+
+    return content;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    throw new Error(`Final report generation failed: ${message}`);
+  }
 }
