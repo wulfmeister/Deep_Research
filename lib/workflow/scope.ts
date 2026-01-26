@@ -70,22 +70,42 @@ export async function writeDraftReport(
     date: getTodayStr()
   });
 
-  const response = await createChatCompletion(
-    {
-      model,
-      messages: [{ role: "user", content: prompt }],
-      response_format: jsonSchemaResponse("draft_report", {
-        type: "object",
-        properties: {
-          draft_report: { type: "string" }
-        },
-        required: ["draft_report"]
-      })
-    },
-    stats
-  );
+  try {
+    const response = await createChatCompletion(
+      {
+        model,
+        messages: [{ role: "user", content: prompt }],
+        response_format: jsonSchemaResponse("draft_report", {
+          type: "object",
+          properties: {
+            draft_report: { type: "string" }
+          },
+          required: ["draft_report"]
+        })
+      },
+      stats
+    );
 
-  const content = response.choices[0]?.message?.content ?? "";
-  const parsed = JSON.parse(content) as { draft_report: string };
-  return parsed.draft_report;
+    const content = response.choices[0]?.message?.content;
+
+    if (!content) {
+      throw new Error("Venice returned empty response for draft report");
+    }
+
+    let parsed: { draft_report: string };
+    try {
+      parsed = JSON.parse(content) as { draft_report: string };
+    } catch {
+      throw new Error("Venice returned invalid JSON for draft report");
+    }
+
+    if (!parsed.draft_report) {
+      throw new Error("Venice response missing draft_report field");
+    }
+
+    return parsed.draft_report;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    throw new Error(`Draft report generation failed: ${message}`);
+  }
 }

@@ -8,13 +8,18 @@ interface DraftRequest {
 }
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as DraftRequest;
+  try {
+    const body = (await request.json()) as DraftRequest;
 
-  if (!body.researchBrief) {
-    return Response.json({ error: "Missing researchBrief" }, { status: 400 });
+    if (!body.researchBrief) {
+      return Response.json({ error: "Missing researchBrief" }, { status: 400 });
+    }
+
+    const stats = createResearchStats();
+    const draftReport = await writeDraftReport(body.researchBrief, undefined, stats);
+    return Response.json({ draftReport, stats });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return Response.json({ error: message }, { status: 500 });
   }
-
-  const stats = createResearchStats();
-  const draftReport = await writeDraftReport(body.researchBrief, undefined, stats);
-  return Response.json({ draftReport, stats });
 }

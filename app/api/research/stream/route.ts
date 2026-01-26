@@ -158,7 +158,11 @@ function createStreamHandler(
       }
       const message = error instanceof Error ? error.message : "Unknown error";
       send({ type: "error", message });
-      controller.close();
+      try {
+        controller.close();
+      } catch {
+        // Controller may already be closed
+      }
     }
   };
 }
