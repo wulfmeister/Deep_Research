@@ -19,7 +19,7 @@ import {
   ResearchStats
 } from "../lib/venice/stats";
 
-const ESTIMATED_MINUTES_PER_ITERATION = 12;
+const ESTIMATED_MINUTES_PER_ITERATION = 34;
 const ESTIMATED_COST_PER_RESEARCHER = 0.015;
 const THEME_STORAGE_KEY = "opendeepresearch-theme";
 const STEP_LABELS: Record<string, string> = {
