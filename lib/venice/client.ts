@@ -5,6 +5,7 @@ const VENICE_BASE_URL = "https://api.venice.ai/api/v1";
 const MAX_RETRIES = 3;
 const RETRY_BASE_DELAY_MS = 1000;
 const DEFAULT_TIMEOUT_MS = 600000; // 10 minutes for long research operations
+const STREAMING_TIMEOUT_MS = 900000; // 15 minutes for streaming operations
 
 export class TimeoutError extends Error {
   constructor(message: string = "Request timed out") {
@@ -140,4 +141,133 @@ export async function createChatCompletion(
   }
 
   return data;
+}
+
+/**
+ * Streaming version of createChatCompletion for long-running requests.
+ * Uses Venice streaming API to avoid 504 timeouts.
+ */
+export async function createChatCompletionStreaming(
+  payload: ChatCompletionRequest,
+  stats?: ResearchStats,
+  options?: RequestOptions
+): Promise<ChatCompletionResponse> {
+  const apiKey = process.env.VENICE_API_KEY;
+  if (!apiKey) {
+    throw new Error("Missing VENICE_API_KEY in environment");
+  }
+
+  const timeoutMs = options?.timeoutMs ?? STREAMING_TIMEOUT_MS;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  const abortHandler = () => controller.abort();
+  if (options?.signal) {
+    if (options.signal.aborted) {
+      clearTimeout(timeoutId);
+      throw new Error("Request was cancelled");
+    }
+    options.signal.addEventListener("abort", abortHandler);
+  }
+
+  try {
+    const response = await fetch(`${VENICE_BASE_URL}/chat/completions`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ ...payload, stream: true }),
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+    options?.signal?.removeEventListener("abort", abortHandler);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Venice API error (${response.status}): ${errorText}`);
+    }
+
+    if (!response.body) {
+      throw new Error("No response body from Venice streaming API");
+    }
+
+    // Read and accumulate streamed chunks
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let content = "";
+    let buffer = "";
+    let usage = { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed === "data: [DONE]") continue;
+        if (!trimmed.startsWith("data: ")) continue;
+
+        try {
+          const json = JSON.parse(trimmed.slice(6));
+          const delta = json.choices?.[0]?.delta?.content;
+          if (delta) {
+            content += delta;
+          }
+          // Capture usage from final chunk if present
+          if (json.usage) {
+            usage = json.usage;
+          }
+        } catch {
+          // Skip malformed JSON chunks
+        }
+      }
+    }
+
+    // Build response in same format as non-streaming
+    const result: ChatCompletionResponse = {
+      choices: [
+        {
+          message: { role: "assistant", content }
+        }
+      ],
+      usage
+    };
+
+    if (stats) {
+      const searchEnabled =
+        payload.venice_parameters?.enable_web_search === "on" ||
+        payload.venice_parameters?.enable_web_search === "auto";
+      const scrapingEnabled = payload.venice_parameters?.enable_web_scraping === true;
+
+      recordUsage({
+        stats,
+        model: payload.model,
+        promptTokens: usage.prompt_tokens,
+        completionTokens: usage.completion_tokens,
+        searchEnabled,
+        scrapingEnabled
+      });
+    }
+
+    return result;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    options?.signal?.removeEventListener("abort", abortHandler);
+
+    if (options?.signal?.aborted) {
+      throw new Error("Request was cancelled");
+    }
+
+    if (controller.signal.aborted) {
+      throw new TimeoutError(`Streaming request timed out after ${timeoutMs}ms`);
+    }
+
+    throw error;
+  }
 }

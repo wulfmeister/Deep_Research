@@ -1,4 +1,4 @@
-import { createChatCompletion } from "../venice/client";
+import { createChatCompletionStreaming } from "../venice/client";
 import { ResearchStats } from "../venice/stats";
 import { finalReportGenerationPrompt } from "../prompts";
 import { finalReportGenerationPrompt as originalFinalReportGenerationPrompt } from "../prompts.original";
@@ -32,7 +32,8 @@ export async function generateFinalReport({
   });
 
   try {
-    const response = await createChatCompletion(
+    // Use streaming API to avoid Venice 504 timeout on long report generation
+    const response = await createChatCompletionStreaming(
       {
         model,
         messages: [{ role: "user", content: prompt }],
