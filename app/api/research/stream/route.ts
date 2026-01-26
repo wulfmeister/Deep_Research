@@ -27,7 +27,7 @@ function checkAborted(signal?: AbortSignal): void {
   }
 }
 
-const HEARTBEAT_INTERVAL_MS = 60000; // 60 seconds
+const HEARTBEAT_INTERVAL_MS = 15000; // 15 seconds - Railway needs frequent heartbeats
 
 function createStreamHandler(
   send: (event: ProgressEvent) => void,
@@ -200,8 +200,9 @@ function createStreamResponse(
   return new Response(stream, {
     headers: {
       "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive"
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no" // Disable nginx/proxy buffering for SSE
     }
   });
 }
