@@ -504,18 +504,31 @@ export default function HomePage() {
             .
           </p>
         </div>
-        <label className="theme-toggle">
-          <span className="theme-label">Dark mode</span>
-          <input
-            type="checkbox"
-            className="theme-toggle-input"
-            checked={theme === "dark"}
-            onChange={(event) =>
-              setTheme(event.target.checked ? "dark" : "light")
+        <div className="header-actions">
+          <button
+            type="button"
+            className="header-btn"
+            onClick={() =>
+              setPrompt(
+                "Explain the effects of average yearly temperature changes on endangered tropical bird populations, whose diet relies on plants which are being forced to grow at higher elevations as a result of rising average temperatures in their habitats"
+              )
             }
-          />
-          <span className="theme-toggle-slider" />
-        </label>
+          >
+            Insert Example
+          </button>
+          <label className="theme-toggle">
+            <span className="theme-label">Dark mode</span>
+            <input
+              type="checkbox"
+              className="theme-toggle-input"
+              checked={theme === "dark"}
+              onChange={(event) =>
+                setTheme(event.target.checked ? "dark" : "light")
+              }
+            />
+            <span className="theme-toggle-slider" />
+          </label>
+        </div>
       </div>
       <ResearchForm
         prompt={prompt}

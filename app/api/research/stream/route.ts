@@ -27,10 +27,11 @@ function checkAborted(signal?: AbortSignal): void {
   }
 }
 
-const HEARTBEAT_INTERVAL_MS = 15000; // 15 seconds - Railway needs frequent heartbeats
+const HEARTBEAT_INTERVAL_MS = 5000; // 5 seconds - aggressive heartbeat for Render/QUIC compatibility
 
 function createStreamHandler(
   send: (event: ProgressEvent) => void,
+  sendComment: () => void,
   controller: ReadableStreamDefaultController,
   abortSignal?: AbortSignal
 ) {
@@ -44,8 +45,10 @@ function createStreamHandler(
     const stats = createResearchStats();
 
     // Start heartbeat interval to keep connection alive during long operations
+    // Send both SSE comment (for proxies) and heartbeat event (for client)
     const heartbeatInterval = setInterval(() => {
       try {
+        sendComment(); // SSE comment keepalive for proxies
         send({ type: "heartbeat", timestamp: Date.now() });
       } catch {
         // Stream may be closed, interval will be cleared below
@@ -193,7 +196,16 @@ function createStreamResponse(
         }
       };
 
-      const handler = createStreamHandler(send, controller, abortController.signal);
+      // SSE comment-style keepalive - recognized by most proxies
+      const sendComment = () => {
+        try {
+          controller.enqueue(encoder.encode(": keepalive\n\n"));
+        } catch {
+          // Stream may be closed
+        }
+      };
+
+      const handler = createStreamHandler(send, sendComment, controller, abortController.signal);
       void handler(prompt, maxIterations, maxConcurrentResearchers, enableWebScraping, useOriginalPrompts);
     },
     cancel() {
