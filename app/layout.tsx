@@ -3,6 +3,7 @@ import "./globals.css";
 export const metadata = {
   title: "Venice Deep Research",
   description: "Deep research workflow powered by Venice and Brave Search.",
+  metadataBase: new URL("https://venice-deep-research.fly.dev"),
   openGraph: {
     title: "Venice Deep Research",
     description: "Deep research workflow powered by Venice and Brave Search.",
@@ -10,7 +11,7 @@ export const metadata = {
     siteName: "Venice Deep Research",
     images: [
       {
-        url: "/og-image.png",
+        url: "https://venice-deep-research.fly.dev/og-image.png",
         width: 1200,
         height: 630,
         alt: "Venice Deep Research UI"
@@ -22,7 +23,7 @@ export const metadata = {
     card: "summary_large_image",
     title: "Venice Deep Research",
     description: "Deep research workflow powered by Venice and Brave Search.",
-    images: ["/og-image.png"]
+    images: ["https://venice-deep-research.fly.dev/og-image.png"]
   }
 };
 

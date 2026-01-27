@@ -32,6 +32,13 @@
 - `npm run build`
 - `npm run start`
 
+## Deployment (Fly.io)
+- Production URL: `https://venice-deep-research.fly.dev/`
+- Configuration in `fly.toml`.
+- Deploy with `fly deploy`.
+- Set secrets with `fly secrets set VENICE_API_KEY=...`.
+- Fly.io chosen for long-running SSE support (15 min idle timeout vs hard limits on Vercel/Railway/Render).
+
 ## Lint
 - `npm run lint`
 - Single file lint: `npm run lint -- --file app/page.tsx`
@@ -122,6 +129,8 @@
 - Keep markup minimal and readable.
 - Prefer semantic elements (`section`, `main`, `h1`/`h2`).
 - Keep export logic in `components/PdfExport.tsx`.
+- Favicon is `app/icon.svg` (key emoji).
+- OG image for link previews is `public/og-image.png` (1200x630).
 
 ## Naming conventions
 - Use `camelCase` for variables and functions.
@@ -134,6 +143,7 @@
 - `components/`: UI components.
 - `hooks/`: reusable hooks.
 - `lib/`: core logic, prompts, Venice client.
+- `public/`: static assets (OG image for link previews).
 - `python_reference/`: legacy code only.
 
 ## Dependency notes
@@ -152,10 +162,13 @@
 
 ## Common paths
 - `app/page.tsx`: main UI state and flow.
+- `app/layout.tsx`: metadata, OG tags, page title.
 - `app/api/research/**/route.ts`: API endpoints.
 - `lib/workflow/`: research orchestration helpers.
 - `lib/venice/`: Venice client/types/stats.
 - `hooks/useResearchHistory.ts`: IndexedDB history.
+- `fly.toml`: Fly.io deployment configuration.
+- `Dockerfile`: container build for Fly.io.
 
 ## Cursor/Copilot rules
 - None found under `.cursor/` or `.github/copilot-instructions.md`.
