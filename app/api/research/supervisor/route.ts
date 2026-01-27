@@ -13,7 +13,13 @@ interface SupervisorRequest {
 }
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as SupervisorRequest;
+  let body: SupervisorRequest;
+
+  try {
+    body = (await request.json()) as SupervisorRequest;
+  } catch {
+    return Response.json({ error: "Invalid JSON" }, { status: 400 });
+  }
 
   if (!body.researchBrief || !body.draftReport) {
     return Response.json(
@@ -28,33 +34,38 @@ export async function POST(request: Request) {
     5
   );
 
-  const stats = createResearchStats();
-  const initialSupervisorState: SupervisorState = {
-    supervisorMessages: [
-      { role: "user", content: `Research brief:\n${body.researchBrief}` },
-      { role: "user", content: `Draft report:\n${body.draftReport}` }
-    ],
-    researchBrief: body.researchBrief,
-    notes: [],
-    rawNotes: [],
-    researchIterations: 0,
-    draftReport: body.draftReport
-  };
+  try {
+    const stats = createResearchStats();
+    const initialSupervisorState: SupervisorState = {
+      supervisorMessages: [
+        { role: "user", content: `Research brief:\n${body.researchBrief}` },
+        { role: "user", content: `Draft report:\n${body.draftReport}` }
+      ],
+      researchBrief: body.researchBrief,
+      notes: [],
+      rawNotes: [],
+      researchIterations: 0,
+      draftReport: body.draftReport
+    };
 
-  const supervisorResult = await runSupervisor(
-    initialSupervisorState,
-    {
-      maxIterations,
-      maxConcurrentResearchers,
-      enableWebScraping: body.enableWebScraping ?? true
-    },
-    stats
-  );
+    const supervisorResult = await runSupervisor(
+      initialSupervisorState,
+      {
+        maxIterations,
+        maxConcurrentResearchers,
+        enableWebScraping: body.enableWebScraping ?? true
+      },
+      stats
+    );
 
-  return Response.json({
-    notes: supervisorResult.notes,
-    draftReport: supervisorResult.draftReport,
-    topics: supervisorResult.topics,
-    stats
-  });
+    return Response.json({
+      notes: supervisorResult.notes,
+      draftReport: supervisorResult.draftReport,
+      topics: supervisorResult.topics,
+      stats
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return Response.json({ error: message }, { status: 500 });
+  }
 }

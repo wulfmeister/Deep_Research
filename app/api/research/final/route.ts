@@ -10,7 +10,13 @@ interface FinalRequest {
 }
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as FinalRequest;
+  let body: FinalRequest;
+
+  try {
+    body = (await request.json()) as FinalRequest;
+  } catch {
+    return Response.json({ error: "Invalid JSON" }, { status: 400 });
+  }
 
   if (!body.researchBrief || !body.draftReport) {
     return Response.json(
@@ -19,13 +25,18 @@ export async function POST(request: Request) {
     );
   }
 
-  const stats = createResearchStats();
-  const report = await generateFinalReport({
-    researchBrief: body.researchBrief,
-    findings: body.findings ?? "",
-    draftReport: body.draftReport,
-    stats
-  });
+  try {
+    const stats = createResearchStats();
+    const report = await generateFinalReport({
+      researchBrief: body.researchBrief,
+      findings: body.findings ?? "",
+      draftReport: body.draftReport,
+      stats
+    });
 
-  return Response.json({ report, stats });
+    return Response.json({ report, stats });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return Response.json({ error: message }, { status: 500 });
+  }
 }

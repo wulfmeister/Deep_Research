@@ -11,6 +11,8 @@ import ProgressSteps, {
   TopicProgress
 } from "../components/ProgressSteps";
 import { ResearchRecord, useResearchHistory } from "../hooks/useResearchHistory";
+import { useResearchStream } from "../hooks/useResearchStream";
+import { useTheme } from "../hooks/useTheme";
 import { MAX_SEARCH_ITERATIONS } from "../lib/workflow/config";
 import type { ProgressEvent } from "../lib/workflow/progress";
 import {
@@ -21,7 +23,6 @@ import {
 
 const ESTIMATED_MINUTES_PER_ITERATION = 34;
 const ESTIMATED_COST_PER_RESEARCHER = 0.015;
-const THEME_STORAGE_KEY = "opendeepresearch-theme";
 const STEP_LABELS: Record<string, string> = {
   brief: "research brief",
   draft: "draft report",
@@ -36,7 +37,6 @@ export default function HomePage() {
   const [maxIterations, setMaxIterations] = useState(2);
   const [maxConcurrentResearchers, setMaxConcurrentResearchers] = useState(5);
   const [enableWebScraping, setEnableWebScraping] = useState(false);
-  const [theme, setTheme] = useState<"light" | "dark">("light");
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<ResearchStats | null>(null);
   const [topicProgress, setTopicProgress] = useState<TopicProgress[]>([]);
@@ -47,7 +47,6 @@ export default function HomePage() {
   const [pendingHistoryExportId, setPendingHistoryExportId] = useState<string | null>(
     null
   );
-  const eventSourceRef = useRef<EventSource | null>(null);
   const logCounterRef = useRef(0);
 
   const initialSteps: ProgressStep[] = [
@@ -70,6 +69,7 @@ export default function HomePage() {
   const [steps, setSteps] = useState<ProgressStep[]>(initialSteps);
 
   const { history, saveRecord, deleteRecord } = useResearchHistory();
+  const { theme, setTheme } = useTheme();
 
   const estimateUnits = maxIterations * maxConcurrentResearchers;
   const estimateMultiplier = enableWebScraping ? 2 : 1;
@@ -83,29 +83,6 @@ export default function HomePage() {
   );
   const estimatedCost =
     estimateUnits * ESTIMATED_COST_PER_RESEARCHER * estimateMultiplier;
-
-  useEffect(() => {
-    const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
-    if (storedTheme === "light" || storedTheme === "dark") {
-      setTheme(storedTheme);
-      return;
-    }
-    const prefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)"
-    ).matches;
-    setTheme(prefersDark ? "dark" : "light");
-  }, []);
-
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
-  }, [theme]);
-
-  useEffect(() => {
-    return () => {
-      eventSourceRef.current?.close();
-    };
-  }, []);
 
   useEffect(() => {
     if (!pendingHistoryExportId || !historyPreview) return;
@@ -271,11 +248,15 @@ export default function HomePage() {
     }
   };
 
-  const handleCancel = () => {
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-      eventSourceRef.current = null;
+  const { startStream, stopStream } = useResearchStream({
+    onEvent: handleProgressEvent,
+    onFallback: () => {
+      void handleSubmit();
     }
+  });
+
+  const handleCancel = () => {
+    stopStream();
     setLoading(false);
     setError("Research cancelled by user");
     addLogEntry("Research cancelled by user.", "error");
@@ -305,46 +286,19 @@ export default function HomePage() {
   };
 
   const handleStreamingSubmit = () => {
-    eventSourceRef.current?.close();
-    eventSourceRef.current = null;
+    stopStream();
     setLoading(true);
     setError(null);
     setReport("");
     setStats(createResearchStats());
     resetSteps();
 
-    const params = new URLSearchParams({
+    startStream({
       prompt,
-      maxIterations: String(maxIterations),
-      maxConcurrentResearchers: String(maxConcurrentResearchers),
-      enableWebScraping: String(enableWebScraping)
+      maxIterations,
+      maxConcurrentResearchers,
+      enableWebScraping
     });
-
-    const eventSource = new EventSource(`/api/research/stream?${params}`);
-    eventSourceRef.current = eventSource;
-    let receivedEvent = false;
-
-    eventSource.onmessage = (message) => {
-      receivedEvent = true;
-      const data = JSON.parse(message.data) as ProgressEvent;
-      handleProgressEvent(data);
-
-      if (data.type === "complete" || data.type === "error") {
-        eventSource.close();
-        eventSourceRef.current = null;
-      }
-    };
-
-    eventSource.onerror = () => {
-      eventSource.close();
-      eventSourceRef.current = null;
-      if (!receivedEvent) {
-        void handleSubmit();
-        return;
-      }
-      setError("Streaming connection lost. Please retry.");
-      setLoading(false);
-    };
   };
 
   const handleSubmit = async () => {

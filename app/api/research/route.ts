@@ -16,7 +16,13 @@ interface ResearchRequest {
 }
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as ResearchRequest;
+  let body: ResearchRequest;
+
+  try {
+    body = (await request.json()) as ResearchRequest;
+  } catch {
+    return Response.json({ error: "Invalid JSON" }, { status: 400 });
+  }
 
   if (!body.prompt) {
     return Response.json({ error: "Missing prompt" }, { status: 400 });
@@ -29,55 +35,65 @@ export async function POST(request: Request) {
   );
   const useOriginalPrompts = body.useOriginalPrompts ?? false;
 
-  const stats = createResearchStats();
-  const messages: Message[] = [{ role: "user", content: body.prompt }];
+  try {
+    const stats = createResearchStats();
+    const messages: Message[] = [{ role: "user", content: body.prompt }];
 
-  const researchBrief = await writeResearchBrief(messages, undefined, stats);
-  const draftReport = await writeDraftReport(researchBrief, undefined, stats, useOriginalPrompts);
-
-  const initialSupervisorState: SupervisorState = {
-    supervisorMessages: [
-      {
-        role: "user",
-        content: `Research brief:\n${researchBrief}`
-      },
-      {
-        role: "user",
-        content: `Draft report:\n${draftReport}`
-      }
-    ],
-    researchBrief,
-    notes: [],
-    rawNotes: [],
-    researchIterations: 0,
-    draftReport
-  };
-
-  const supervisorResult = await runSupervisor(
-    initialSupervisorState,
-    {
-      maxIterations,
-      maxConcurrentResearchers,
-      enableWebScraping: body.enableWebScraping ?? true,
+    const researchBrief = await writeResearchBrief(messages, undefined, stats);
+    const draftReport = await writeDraftReport(
+      researchBrief,
+      undefined,
+      stats,
       useOriginalPrompts
-    },
-    stats
-  );
+    );
 
-  const findings = supervisorResult.notes.join("\n");
-  const finalReport = await generateFinalReport({
-    researchBrief,
-    findings,
-    draftReport: supervisorResult.draftReport ?? draftReport,
-    stats,
-    useOriginalPrompts
-  });
+    const initialSupervisorState: SupervisorState = {
+      supervisorMessages: [
+        {
+          role: "user",
+          content: `Research brief:\n${researchBrief}`
+        },
+        {
+          role: "user",
+          content: `Draft report:\n${draftReport}`
+        }
+      ],
+      researchBrief,
+      notes: [],
+      rawNotes: [],
+      researchIterations: 0,
+      draftReport
+    };
 
-  return Response.json({
-    report: finalReport,
-    researchBrief,
-    draftReport: supervisorResult.draftReport ?? draftReport,
-    topics: supervisorResult.topics,
-    stats
-  });
+    const supervisorResult = await runSupervisor(
+      initialSupervisorState,
+      {
+        maxIterations,
+        maxConcurrentResearchers,
+        enableWebScraping: body.enableWebScraping ?? true,
+        useOriginalPrompts
+      },
+      stats
+    );
+
+    const findings = supervisorResult.notes.join("\n");
+    const finalReport = await generateFinalReport({
+      researchBrief,
+      findings,
+      draftReport: supervisorResult.draftReport ?? draftReport,
+      stats,
+      useOriginalPrompts
+    });
+
+    return Response.json({
+      report: finalReport,
+      researchBrief,
+      draftReport: supervisorResult.draftReport ?? draftReport,
+      topics: supervisorResult.topics,
+      stats
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return Response.json({ error: message }, { status: 500 });
+  }
 }

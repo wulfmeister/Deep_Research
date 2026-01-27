@@ -9,15 +9,26 @@ interface BriefRequest {
 }
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as BriefRequest;
+  let body: BriefRequest;
+
+  try {
+    body = (await request.json()) as BriefRequest;
+  } catch {
+    return Response.json({ error: "Invalid JSON" }, { status: 400 });
+  }
 
   if (!body.prompt) {
     return Response.json({ error: "Missing prompt" }, { status: 400 });
   }
 
-  const stats = createResearchStats();
-  const messages: Message[] = [{ role: "user", content: body.prompt }];
-  const researchBrief = await writeResearchBrief(messages, undefined, stats);
+  try {
+    const stats = createResearchStats();
+    const messages: Message[] = [{ role: "user", content: body.prompt }];
+    const researchBrief = await writeResearchBrief(messages, undefined, stats);
 
-  return Response.json({ researchBrief, stats });
+    return Response.json({ researchBrief, stats });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return Response.json({ error: message }, { status: 500 });
+  }
 }
